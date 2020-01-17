@@ -1,4 +1,4 @@
-
+# code adapted from https://www.pyimagesearch.com/2018/07/30/opencv-object-tracking/
 # coding: utf-8
 # import the necessary packages
 from imutils.video import VideoStream
@@ -118,17 +118,17 @@ while True:
         tracker.init(frame, initBB)
         fps = FPS().start()
 
-# if the `q` key was pressed, break from the loop
-elif key == ord("q"):
-    break
+    # if the `q` key was pressed, break from the loop
+    elif key == ord("q"):
+        break
 
 # if we are using a webcam, release the pointer
 if not args.get("video", False):
-vs.stop()
+    vs.stop()
 
 # otherwise, release the file pointer
 else:
-vs.release()
+    vs.release()
 
 # close all windows
 cv2.destroyAllWindows()
