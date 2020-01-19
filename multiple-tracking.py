@@ -11,6 +11,8 @@ import numpy as np
 ap = argparse.ArgumentParser()
 ap.add_argument("-v", "--video", type = str, help = "path to input video file")
 ap.add_argument("-t", "--tracker", type = str, default = "kcf", help = "OpenCV object tracker type")
+ap.add_argument("-f", "--filename", type = str, default = "output.csv", help = "output log file name")
+ap.add_argument("-l", "--log", type = int, default = 5000, help = "interval for recording object coordinates in milliseconds")
 args = vars(ap.parse_args())
 
 # initialize a dictionary that maps strings to their corresponding OpenCV object tracker implementations
@@ -25,6 +27,7 @@ OPENCV_OBJECT_TRACKERS = {
 }
 
 # initialize OpenCV's special multi-object tracker
+# file = open(filename, 'w')
 trackers = cv2.MultiTracker_create()
 IDs = []
 
@@ -50,6 +53,7 @@ while True:
 
 	# resize the frame (so we can process it faster)
 	frame = imutils.resize(frame, width = 600)
+	timestamp = vs.get(cv2.CAP_PROP_POS_MSEC)
 
 	# grab the updated bounding box coordinates (if any) for each object that is being tracked
 	(success, boxes) = trackers.update(frame)
@@ -66,32 +70,48 @@ while True:
 
 	# if the 's' key is selected, we are going to "select" a bounding box to track
 	if key == ord("s"):
-		# select the bounding box of the object we want to track (make sure you press ENTER or SPACE after selecting the ROI)
-		box = cv2.selectROI("Frame", frame, fromCenter = False, showCrosshair = True)
-		box_id = input('Object ID:')
-		IDs.append(box_id)
+		while True:
+			try:
+				# select the bounding box of the object we want to track (make sure you press ENTER or SPACE after selecting the ROI)
+				box = cv2.selectROI("Frame", frame, fromCenter = False, showCrosshair = True)
+				box_id = input('Object ID:')
+				IDs.append(box_id)
 
-		# create a new object tracker for the bounding box and add it to our multi-object tracker
-		tracker = OPENCV_OBJECT_TRACKERS[args["tracker"]]()
-		trackers.add(tracker, frame, box)
+				# create a new object tracker for the bounding box and add it to our multi-object tracker
+				tracker = OPENCV_OBJECT_TRACKERS[args["tracker"]]()
+				trackers.add(tracker, frame, box)
+
+				add_object = input('Select another object? [y/n]')
+				if add_object == 'n':
+					break
+			except:
+				break
 
 	elif key == ord("r"):
-		box_id = input('Object to remove:')
-		box_index = IDs.index(box_id)
-		IDs.remove(box_id)
-		boxes = np.delete(trackers.getObjects().copy(), box_index, 0)
+		while True:
+			try:
+				box_id = input('Object to remove:')
+				box_index = IDs.index(box_id)
+				IDs.remove(box_id)
+				boxes = np.delete(trackers.getObjects().copy(), box_index, 0)
 
-		trackers = cv2.MultiTracker_create()
-		for box in boxes:
-			tracker = OPENCV_OBJECT_TRACKERS[args["tracker"]]()
-			trackers.add(tracker, frame, tuple(box))
+				trackers = cv2.MultiTracker_create()
+				for box in boxes:
+					tracker = OPENCV_OBJECT_TRACKERS[args["tracker"]]()
+					trackers.add(tracker, frame, tuple(box))
 
-		replace = input('Replace box? [y/n]')
-		if replace == 'y':
-			box = cv2.selectROI("Frame", frame, fromCenter = False, showCrosshair = True)
-			IDs.append(box_id)
-			tracker = OPENCV_OBJECT_TRACKERS[args["tracker"]]()
-			trackers.add(tracker, frame, box)
+				replace = input('Replace box? [y/n]')
+				if replace == 'y':
+					box = cv2.selectROI("Frame", frame, fromCenter = False, showCrosshair = True)
+					IDs.append(box_id)
+					tracker = OPENCV_OBJECT_TRACKERS[args["tracker"]]()
+					trackers.add(tracker, frame, box)
+
+				remove_object = input('Remove/reset another object? [y/n]')
+				if remove_object == 'n':
+					break
+			except:
+				break
 
 	# if the `q` key was pressed, break from the loop
 	elif key == ord("q"):
