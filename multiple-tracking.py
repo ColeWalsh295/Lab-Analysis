@@ -6,6 +6,7 @@ import imutils
 import time
 import cv2
 import numpy as np
+import csv
 
 # construct the argument parser and parse the arguments
 ap = argparse.ArgumentParser()
@@ -27,7 +28,8 @@ OPENCV_OBJECT_TRACKERS = {
 }
 
 # initialize OpenCV's special multi-object tracker
-# file = open(filename, 'w')
+file = open(args.get("filename"), 'w')
+writer = csv.writer(file)
 trackers = cv2.MultiTracker_create()
 IDs = []
 
@@ -62,7 +64,10 @@ while True:
 	for index, box in enumerate(boxes):
 		(x, y, w, h) = [int(v) for v in box]
 		cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-		cv2.putText(frame, IDs[index], (x, y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
+
+		object = IDs[index]
+		cv2.putText(frame, object, (x, y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
+		writer.writerow([timestamp, object] + [str(c) for c in box])
 
 	# show the output frame
 	cv2.imshow("Frame", frame)
@@ -127,3 +132,4 @@ else:
 
 # close all windows
 cv2.destroyAllWindows()
+file.close()
