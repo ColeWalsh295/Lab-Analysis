@@ -13,7 +13,7 @@ ap = argparse.ArgumentParser()
 ap.add_argument("-v", "--video", type = str, help = "path to input video file")
 ap.add_argument("-t", "--tracker", type = str, default = "kcf", help = "OpenCV object tracker type")
 ap.add_argument("-f", "--filename", type = str, default = "output.csv", help = "output log file name")
-ap.add_argument("-l", "--log", type = int, default = 5000, help = "interval for recording object coordinates in milliseconds")
+ap.add_argument("-i", "--interval", type = int, default = 5000, help = "interval for recording object coordinates in milliseconds")
 args = vars(ap.parse_args())
 
 # initialize a dictionary that maps strings to their corresponding OpenCV object tracker implementations
@@ -28,8 +28,9 @@ OPENCV_OBJECT_TRACKERS = {
 }
 
 # initialize OpenCV's special multi-object tracker
-file = open(args.get("filename"), 'w')
+file = open(args.get("filename"), 'w', newline = '')
 writer = csv.writer(file)
+interval = args.get("interval")
 trackers = cv2.MultiTracker_create()
 IDs = []
 
@@ -44,6 +45,7 @@ else:
 	vs = cv2.VideoCapture(args["video"])
 
 # loop over frames from the video stream
+previous_timestamp = 0
 while True:
 	# grab the current frame, then handle if we are using a VideoStream or VideoCapture object
 	frame = vs.read()
@@ -67,7 +69,10 @@ while True:
 
 		object = IDs[index]
 		cv2.putText(frame, object, (x, y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
-		writer.writerow([timestamp, object] + [str(c) for c in box])
+
+		if(timestamp > previous_timestamp + interval):
+			writer.writerow([timestamp, object] + [str(c) for c in box])
+			previous_timestamp = timestamp
 
 	# show the output frame
 	cv2.imshow("Frame", frame)
