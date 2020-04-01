@@ -46,9 +46,13 @@ else:
 
 # loop over frames from the video stream
 previous_timestamp = 0
+i = 0
 while True:
+	i += 1
 	# grab the current frame, then handle if we are using a VideoStream or VideoCapture object
 	frame = vs.read()
+	# if(i % 10 != 0):
+	# 	continue
 	frame = frame[1] if args.get("video", False) else frame
 
 	# check to see if we have reached the end of the stream
@@ -61,6 +65,8 @@ while True:
 
 	# grab the updated bounding box coordinates (if any) for each object that is being tracked
 	(success, boxes) = trackers.update(frame)
+	# if(round(timestamp, -2) % 1000 != 0):
+	# 	continue
 
 	# loop over the bounding boxes and draw then on the frame
 	for index, box in enumerate(boxes):
@@ -72,7 +78,9 @@ while True:
 
 		if(timestamp > previous_timestamp + interval):
 			writer.writerow([timestamp, object] + [str(c) for c in box])
-			previous_timestamp = timestamp
+
+			if((index + 1) == len(boxes)):
+				previous_timestamp = timestamp
 
 	# show the output frame
 	cv2.imshow("Frame", frame)

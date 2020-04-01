@@ -1,0 +1,16 @@
+```{r}
+source('GraphBuilder.R')
+```
+
+# 9-18
+```{r}
+gender.vec <- c('M', 'F', 'F', 'F', 'F', 'F', 'M', 'M', 'M', 'M', 'M', 'M', 'F', 'F', 'M', 
+                'M', 'M', 'M', 'F')
+g = create.graph(gender.vec = gender.vec, 
+                 file1 = 'C:/Users/Cole/Documents/GRA_Spring2020/Student-Lab-Interactions/Videos/9_18/cam1.csv',
+                 file2 = 'C:/Users/Cole/Documents/GRA_Spring2020/Student-Lab-Interactions/Videos/9_18/cam2.csv', nvid1 = 5, nvid2 = 7)
+
+par(mar = c(0, 0, 0, 0))
+plot(g, edge.width = E(g)$weight, vertex.color = V(g)$color, edge.color = E(g)$color, vertex.size = V(g)$size, layout = layout_nicely(g))
+```
+
