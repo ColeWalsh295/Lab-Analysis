@@ -1,16 +1,85 @@
+---
+output:
+  pdf_document: default
+  html_document: default
+---
 ```{r}
 source('GraphBuilder.R')
+library(RColorBrewer)
+library(reshape2)
+library(ggplot2)
+theme_set(theme_classic(base_size = 14))
+```
+
+```{r}
+plot.graph <- function(g){
+  pal <- brewer.pal(length(unique(V(g)$group)), "Set1")
+  par(mar = c(0, 0, 0, 0))
+
+  plot(g, edge.width = E(g)$weight, vertex.color = pal[as.numeric(as.factor(vertex_attr(g, "group")))], edge.color = E(g)$color, vertex.size = V(g)$size, layout = layout_nicely(g), edge.curved = 0.2, vertex.label = NA)
+}
+
+density.calc <- function(g){
+  d <- edge_density(g)
+  dw <- edge_density(g) * sum(E(g)$Time) / length(E(g))
+  
+  return(c(d, dw))
+}
+
+df.create <- function(list.of.graphs, session = NA, lab = NA, week = NA, method = NA){
+  df <- as.data.frame(t(matrix(unlist(lapply(list.of.graphs, density.calc)), 
+                               ncol = length(list.of.graphs))))
+  
+  args = c('session', 'lab', 'week', 'method')
+  colnames(df) <- c('density', 'density.weighted')
+  i = 1
+  for(var in list(session, lab, week, method)){
+    if(!is.na(var)){
+      df[, args[i]] <- var
+    }
+    i = i + 1
+  }
+  
+  return(df)
+}
+
+```
+
+# 9-11
+```{r}
+g.inter.9.11 = create.graph(file1 = 'C:/Users/Cole/Documents/GRA_Spring2020/Student-Lab-Interactions/Videos/9_11/cam1.csv',
+                            file2 = 'C:/Users/Cole/Documents/GRA_Spring2020/Student-Lab-Interactions/Videos/9_11/cam2.csv', nvid1 = 3,
+                            nvid2 = 6)
+plot.graph(g.inter.9.11)
 ```
 
 # 9-18
 ```{r}
-gender.vec <- c('M', 'F', 'F', 'F', 'F', 'F', 'M', 'M', 'M', 'M', 'M', 'M', 'F', 'F', 'M', 
-                'M', 'M', 'M', 'F')
-g = create.graph(gender.vec = gender.vec, 
-                 file1 = 'C:/Users/Cole/Documents/GRA_Spring2020/Student-Lab-Interactions/Videos/9_18/cam1.csv',
-                 file2 = 'C:/Users/Cole/Documents/GRA_Spring2020/Student-Lab-Interactions/Videos/9_18/cam2.csv', nvid1 = 5, nvid2 = 7)
+g.inter.9.18 = create.graph(file1 = 'C:/Users/Cole/Documents/GRA_Spring2020/Student-Lab-Interactions/Videos/9_18/cam1.csv',
+                            file2 = 'C:/Users/Cole/Documents/GRA_Spring2020/Student-Lab-Interactions/Videos/9_18/cam2.csv', nvid1 = 5,
+                            nvid2 = 7)
+plot.graph(g.inter.9.18)
+```
 
-par(mar = c(0, 0, 0, 0))
-plot(g, edge.width = E(g)$weight, vertex.color = V(g)$color, edge.color = E(g)$color, vertex.size = V(g)$size, layout = layout_nicely(g))
+# 9-25
+```{r}
+g.inter.9.25 = create.graph(file1 = 'C:/Users/Cole/Documents/GRA_Spring2020/Student-Lab-Interactions/Videos/9_25/cam2.csv', nvid1 = 1)
+plot.graph(g.inter.9.25)
+```
+
+# density analysis
+```{r}
+inter.graphs.wednesday <- list(g.inter.9.11, g.inter.9.18, g.inter.9.25)
+
+df.network <- df.create(inter.graphs.wednesday, session = 'Wednesday', lab = c(1, 1, 2), 
+                        week = c(1, 2, 1), method = 'inter') %>%
+  mutate(lab.week = paste('L', lab, 'W', week)) %>%
+  melt(., measure.vars = c('density', 'density.weighted'))
+
+ggplot(df.network, aes(x = lab.week, y = value, group = method)) +
+  geom_point() +
+  geom_line(stat = 'identity') +
+  facet_wrap(~variable, scales = 'free', labeller = labeller(variable = c('density' = 'Unweighted', 'density.weighted' = 'Weighted'))) +
+  labs(x = 'Lab session', y = 'Density')
 ```
 

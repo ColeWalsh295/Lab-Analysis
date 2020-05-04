@@ -3,20 +3,23 @@ library(reshape2)
 library(tidyr)
 library(igraph)
 
-create.graph <- function(c.vertex = 1, c.edge = 40, gender.vec = NULL, network = 'between', 
-                         file1, file2, nvid1, nvid2){
+create.graph <- function(file1, nvid1, file2 = NULL, nvid2 = NULL){
   # Read data and clean
-  df.1 <- read.csv(file1, skip = nvid1 + 14, stringsAsFactors = FALSE)
-  df.2 <- read.csv(file2, skip = nvid2 + 14, stringsAsFactors = FALSE)
-  
-  df <- rbind(df.1, df.2)[, c('Time', 'Subject', 'Behavior')]
-  
+  if(!is.null(file2)){
+    df.1 <- read.csv(file1, skip = nvid1 + 14, stringsAsFactors = FALSE)
+    df.2 <- read.csv(file2, skip = nvid2 + 14, stringsAsFactors = FALSE)
+    
+    df <- rbind(df.1, df.2)[, c('Time', 'Subject', 'Behavior')]
+  } else {
+    df <- read.csv(file1, skip = nvid1 + 14, stringsAsFactors = FALSE)
+  }
+
   df <- df %>%
     rowwise() %>%
     mutate(Subject = strsplit(Subject, '-')[[1]][1])
   
   # dcast
-  df.dcast <- dcast(df, Time ~ Subject)
+  df.dcast <- dcast(df, Time ~ Subject, value.var = 'Behavior')
   df.fill <- fill(df.dcast, -Time) %>%
     select(-c('NA'))
   df.fill[is.na(df.fill)] <- 'StudentExit'
@@ -53,28 +56,23 @@ create.graph <- function(c.vertex = 1, c.edge = 40, gender.vec = NULL, network =
   
   # Set vertex/edge attributes
   g = graph_from_data_frame(df.times, directed = FALSE)
-  E(g)$weight = df.times$Time/c.edge
-  
-  if(!is.null(gender.vec)){
-    V(g)$gender <- gender.vec
-    V(g)$color <- ifelse(V(g)$gender == 'M', "green", "orange")
-  }
   
   E(g)$group <- ifelse(substr(ends(g, E(g))[, 1], 1, 1) == substr(ends(g, E(g))[, 2], 1, 1), 
                        'within', 'between')
   
+  E(g)$Time = df.times$Time
+  E(g)[E(g)$group == 'within']$Time = 1
+  E(g)$weight = E(g)$Time/max(E(g)$Time) * 5
+  
+  V(g)$group <- substr(V(g)$name, 1, 1)
+
+  
   E(g)$color <- adjustcolor('black', 0.5)
   
-  g.btw <- subgraph.edges(g, E(g)[E(g)$group == 'between'], delete.vertices = FALSE)
+  V(g)$centr.deg <- centralization.degree(g)$res
   
-  V(g.btw)$centr.deg <- centralization.degree(g.btw)$res
+  V(g)$size <- (V(g)$centr.deg + 1)/max(V(g)$centr.deg) * 15
   
-  V(g.btw)$size <- (V(g.btw)$centr.deg + 1) * c.vertex
-  
-  if(network == 'between'){
-    return(g.btw)
-  } else {
-    return(g)
-  }
+  return(g)
   
 }
