@@ -146,7 +146,7 @@ plot.graph(g.intra.9.25)
 ```{r}
 g.inter.9.18.DK = create.graph(file1 = 'C:/Users/Cole/Documents/GRA_Spring2020/Student-Lab-Interactions/Daniyar/Camera1.csv',
                             file2 = 'C:/Users/Cole/Documents/GRA_Spring2020/Student-Lab-Interactions/Daniyar/Camera2.csv', 
-                            nvid1 = 5, nvid2 = 7, method = 1)
+                            nvid1 = 5, nvid2 = 7, offset1 = 142, method = 1)
 plot.graph(g.inter.9.18.DK)
 
 reliability(g.inter.9.18, g.inter.9.18.DK)

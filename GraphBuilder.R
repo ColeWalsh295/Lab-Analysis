@@ -4,15 +4,18 @@ library(tidyr)
 library(igraph)
 library(gtools)
 
-create.graph <- function(file1, nvid1, file2 = NULL, nvid2 = NULL, method = 1){
+create.graph <- function(file1, nvid1, offset1 = 0, file2 = NULL, nvid2 = NULL, offset2 = 0, method = 1){
   # Read data and clean
   if(!is.null(file2)){
     df.1 <- read.csv(file1, skip = nvid1 + 14, stringsAsFactors = FALSE)
+    df.1$Time <- df.1$Time + offset1
     df.2 <- read.csv(file2, skip = nvid2 + 14, stringsAsFactors = FALSE)
+    df.2$Time <- df.2$Time + offset2
     
     df <- rbind(df.1, df.2)
   } else {
     df <- read.csv(file1, skip = nvid1 + 14, stringsAsFactors = FALSE)
+    df$Time <- df$Time + offset1
   }
   
   if(method == 1){
