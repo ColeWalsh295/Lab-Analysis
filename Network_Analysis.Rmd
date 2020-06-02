@@ -191,17 +191,20 @@ df.density <- rbind(df.create(inter.graphs.wednesday, session = 'Wednesday', lab
   melt(., measure.vars = c('density', 'density.weighted'))
 
 plot.unweight <- ggplot(df.density %>%
-         filter(variable == 'density'), aes(x = as.factor(week), y = value, group = method.lab, color = as.factor(method), shape = as.factor(lab))) +
+         filter(variable == 'density'), 
+         aes(x = as.factor(lab.week), y = value, group = method, color = as.factor(method))) +
   geom_point(size = 4) +
   geom_line(stat = 'identity', size = 1) +
   labs(x = 'Lab week', y = 'Unweighted Density') +
   scale_color_manual(name = 'Method', values = c('#0072B2', '#E69F00')) +
-  scale_shape_manual(name = 'Lab Number', values = c(16, 15)) +
+  # scale_shape_manual(name = 'Lab Number', values = c(16, 15)) +
   theme(legend.position = "none")
 
 plot.weight <- ggplot(df.density %>%
                         filter(variable == 'density.weighted') %>%
-                        mutate(method = ifelse(method == 1, 'one', 'two')), aes(x = as.factor(week), y = value, group = method.lab, color = as.factor(method), shape = as.factor(lab))) +
+                        mutate(method = ifelse(method == 1, 'one', 'two')), 
+                      aes(x = as.factor(lab.week), y = value, group = method, 
+                          color = as.factor(method))) +
   geom_point(size = 4) +
   geom_line(stat = 'identity', size = 1) +
   facet_wrap(~method, scales = 'free', nrow = 2, strip.position = "left", 
@@ -209,7 +212,7 @@ plot.weight <- ggplot(df.density %>%
   #facet_wrap(~variable, scales = 'free', labeller = labeller(variable = c('density' = 'Unweighted', 'density.weighted' = 'Weighted'))) +
   labs(x = 'Lab week') +
   scale_color_manual(name = 'Method', values = c('#0072B2', '#E69F00'), labels = c('Scan', 'Skip')) +
-  scale_shape_manual(name = 'Lab session', values = c(16, 15), labels = c('A', 'B')) +
+  # scale_shape_manual(name = 'Lab session', values = c(16, 15), labels = c('A', 'B')) +
   theme(
   strip.background = element_blank(),
   #strip.text.x = element_blank()
