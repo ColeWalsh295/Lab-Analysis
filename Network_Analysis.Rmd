@@ -3,6 +3,7 @@ output:
   pdf_document: default
   html_document: default
 ---
+# Load necessary packages
 ```{r, results = 'hide', message = FALSE, warning = FALSE}
 source('GraphBuilder.R')
 library(reshape2)
@@ -13,10 +14,12 @@ library(gridExtra)
 theme_set(theme_classic(base_size = 10))
 ```
 
+# Define function for later analyses
 ```{r}
 density.calc <- function(g, method = 1){
   d <- edge_density(g)
-  dw <- ifelse(method == 1, edge_density(g) * sum(E(g)$time) / length(E(g)), edge_density(g) * sum(E(g)$count) / length(E(g)))
+  dw <- ifelse(method == 1, edge_density(g) * sum(E(g)$time) / length(E(g)), 
+               edge_density(g) * sum(E(g)$count) / length(E(g)))
   
   return(c(d, dw))
 }
@@ -41,7 +44,8 @@ vars.calc <- function(g){
 df.create <- function(list.of.graphs, session = NA, lab = NA, week = NA, method = 1, 
                       func = 'density'){
   if(func == 'density'){
-      df <- as.data.frame(t(matrix(unlist(lapply(list.of.graphs, density.calc, method = method)), 
+      df <- as.data.frame(t(matrix(unlist(lapply(list.of.graphs, density.calc, 
+                                                 method = method)), 
                                    ncol = length(list.of.graphs))))
       colnames(df) <- c('density', 'density.weighted')
   } else {
@@ -76,7 +80,8 @@ reliability <- function(g1, g2, method = 1, normalize = FALSE){
     max.matrix <- pmax(as_adjacency_matrix(g1, attr = weight),
                        as_adjacency_matrix(g2, attr = weight))
     
-    d <- density.calc(graph_from_adjacency_matrix(max.matrix, mode = 'undirected', weighted = weight), method = method)
+    d <- density.calc(graph_from_adjacency_matrix(max.matrix, mode = 'undirected', 
+                                                  weighted = weight), method = method)
     hd <- 1 - hd/d[1]
     hd.w <- 1 - hd.w/d[2]
   }
@@ -84,7 +89,7 @@ reliability <- function(g1, g2, method = 1, normalize = FALSE){
 }
 ```
 
-# 9-11
+# Load 9-11 files and draw graphs
 ```{r}
 g.inter.9.11 <- create.graph(file1 = 'C:/Users/Cole/Documents/GRA_Spring2020/Student-Lab-Interactions/Videos/9_11/cam1.csv',
                              file2 = 'C:/Users/Cole/Documents/GRA_Spring2020/Student-Lab-Interactions/Videos/9_11/cam2.csv', nvid1 = 3,
@@ -95,7 +100,7 @@ g.intra.9.11 <- graph.from.adjacency('C:/Users/Cole/Documents/GRA_Spring2020/Stu
 plot.graph(g.intra.9.11)
 ```
 
-# 9-18
+# Load 9-18 files and draw graphs
 ```{r}
 g.inter.9.18 = create.graph(file1 = 'C:/Users/Cole/Documents/GRA_Spring2020/Student-Lab-Interactions/Videos/9_18/cam1.csv',
                             file2 = 'C:/Users/Cole/Documents/GRA_Spring2020/Student-Lab-Interactions/Videos/9_18/cam2.csv', nvid1 = 5,
@@ -104,13 +109,14 @@ plot.graph(g.inter.9.18)
 
 g.intra.9.18 <- graph.from.adjacency('C:/Users/Cole/Documents/GRA_Spring2020/Student-Lab-Interactions/Daniyar/9_18_intra.csv')
 
-V(g.intra.9.18)$name <- c('1A', '1B', '2C', '2B', '2A', '3A', '3C', '3B', '4A', '4B', '4C', '5A',
-                          '5B', '5C', '6A', '6B', '6C', '7A', '7B')
+# rename nodes to agree with reliability check graph below
+V(g.intra.9.18)$name <- c('1A', '1B', '2C', '2B', '2A', '3A', '3C', '3B', '4A', '4B', '4C',
+                          '5A', '5B', '5C', '6A', '6B', '6C', '7A', '7B')
 
 plot.graph(g.intra.9.18)
 ```
 
-# 9-25
+# Load 9-25 files and draw graphs
 ```{r}
 g.inter.9.25 = create.graph(file1 = 'C:/Users/Cole/Documents/GRA_Spring2020/Student-Lab-Interactions/Videos/9_25/cam2.csv', nvid1 = 1)
 plot.graph(g.inter.9.25)
@@ -121,8 +127,8 @@ g.intra.9.25 = create.graph(file1 = 'C:/Users/Cole/Documents/GRA_Spring2020/Stud
 plot.graph(g.intra.9.25)
 ```
 
-# Reliability check
-```{r}
+# Check interrater reliability for 9-18
+```{r, warning = FALSE, message = FALSE}
 g.inter.9.18.DK = create.graph(file1 = 'C:/Users/Cole/Documents/GRA_Spring2020/Student-Lab-Interactions/Daniyar/Camera1.csv',
                             file2 = 'C:/Users/Cole/Documents/GRA_Spring2020/Student-Lab-Interactions/Daniyar/Camera2.csv', 
                             nvid1 = 5, nvid2 = 7, offset1 = 142, method = 1)
@@ -135,43 +141,38 @@ g.intra.9.18.CW = create.graph(file1 = 'C:/Users/Cole/Documents/GRA_Spring2020/S
                             file2 = 'C:/Users/Cole/Documents/GRA_Spring2020/Student-Lab-Interactions/Videos/9_18/intra/cam2.csv', 
                             nvid1 = 5, nvid2 = 7, method = 2)
 
-#g.intra.9.18.sub <- induced.subgraph(g.intra.9.18, c(1, 2, 6, 7, 8, 18, 19))
-
 reliability(g.intra.9.18, igraph::permute(g.intra.9.18.CW, 
                                           match(V(g.intra.9.18.CW)$name,
                                                 V(g.intra.9.18)$name)), method = 2)
 reliability(g.intra.9.18, igraph::permute(g.intra.9.18.CW, 
                                           match(V(g.intra.9.18.CW)$name,
-                                                V(g.intra.9.18)$name)), method = 2, normalize = TRUE)
+                                                V(g.intra.9.18)$name)), method = 2,
+            normalize = TRUE)
 ```
 
-# get legend function
-```{r}
+# Analyze evolution of density over time
+```{r, warning = FALSE}
 get_legend<-function(myggplot){
   tmp <- ggplot_gtable(ggplot_build(myggplot))
   leg <- which(sapply(tmp$grobs, function(x) x$name) == "guide-box")
   legend <- tmp$grobs[[leg]]
   return(legend)
 }
-```
 
-
-# density analysis
-```{r}
 inter.graphs.wednesday <- list(g.inter.9.11, g.inter.9.18, g.inter.9.25)
 intra.graphs.wednesday <- list(g.intra.9.11, g.intra.9.18, g.intra.9.25)
 
-df.density <- rbind(df.create(inter.graphs.wednesday, session = 'Wednesday', lab = c(1, 1, 2), 
-                              week = c(1, 2, 1), method = 1), 
-                    df.create(intra.graphs.wednesday, session = 'Wednesday', lab = c(1, 1, 2), 
-                              week = c(1, 2, 1), method = 2)) %>%
+df.density <- rbind(df.create(inter.graphs.wednesday, session = 'Wednesday', 
+                              lab = c(1, 1, 2),  week = c(1, 2, 3), method = 1), 
+                    df.create(intra.graphs.wednesday, session = 'Wednesday', 
+                              lab = c(1, 1, 2), week = c(1, 2, 3), method = 2)) %>%
   mutate(lab.week = paste('L', lab, 'W', week, sep = ''),
          method.lab = paste('M', method, 'L', lab)) %>%
   melt(., measure.vars = c('density', 'density.weighted'))
 
 plot.unweight <- ggplot(df.density %>%
          filter(variable == 'density'), 
-         aes(x = as.factor(lab.week), y = value, group = method, color = as.factor(method))) +
+         aes(x = as.factor(week), y = value, group = method, color = as.factor(method))) +
   geom_point(size = 4) +
   geom_line(stat = 'identity', size = 1) +
   labs(x = 'Lab week', y = 'Unweighted Density') +
@@ -182,15 +183,19 @@ plot.unweight <- ggplot(df.density %>%
 plot.weight <- ggplot(df.density %>%
                         filter(variable == 'density.weighted') %>%
                         mutate(method = ifelse(method == 1, 'one', 'two')), 
-                      aes(x = as.factor(lab.week), y = value, group = method, 
+                      aes(x = as.factor(week), y = value, group = method, 
                           color = as.factor(method))) +
   geom_point(size = 4) +
   geom_line(stat = 'identity', size = 1) +
   facet_wrap(~method, scales = 'free', nrow = 2, strip.position = "left", 
-                labeller = as_labeller(c(one = "Weighted density (minutes)", two = "Weighted density (count)"))) +
-  #facet_wrap(~variable, scales = 'free', labeller = labeller(variable = c('density' = 'Unweighted', 'density.weighted' = 'Weighted'))) +
+                labeller = as_labeller(c(one = "Weighted density (minutes)", 
+                                         two = "Weighted density (count)"))) +
+  #facet_wrap(~variable, scales = 'free', 
+  #labeller = labeller(variable = c('density' = 'Unweighted', 
+  #'density.weighted' = 'Weighted'))) +
   labs(x = 'Lab week') +
-  scale_color_manual(name = 'Method', values = c('#0072B2', '#E69F00'), labels = c('Scan', 'Skip')) +
+  scale_color_manual(name = 'Method', values = c('#0072B2', '#E69F00'), 
+                     labels = c('Scan', 'Skip')) +
   # scale_shape_manual(name = 'Lab session', values = c(16, 15), labels = c('A', 'B')) +
   theme(
   strip.background = element_blank(),
@@ -207,33 +212,10 @@ grid.arrange(plot.unweight, plot.weight, legend, layout_matrix = rbind(c(1, 2), 
              widths = c(2.7, 2.7), heights = c(2.5, 0.2))
 ```
 
-# Alternative density graph
-```{r}
-scale <- max(df.density[(df.density$variable == 'density.weighted') & (df.density$method == 2),
-                        'value'])/max(df.density[(df.density$variable == 'density.weighted') &
-                                                   (df.density$method == 1), 'value']) + 1
-
-plot.weight <- ggplot(df.density %>%
-                        filter(variable == 'density.weighted') %>%
-                        mutate(value = ifelse(method == 1, value, value/scale)), aes(x = lab.week, y = value, group = method, color = as.factor(method))) +
-  geom_point(size = 4) +
-  geom_line(stat = 'identity', size = 1) +
-  labs(x = 'Lab session', y = 'Method 1 weighted density (minutes)') +
-  scale_color_manual(name = 'Method', values = c('#0072B2', '#E69F00')) +
-  scale_y_continuous(sec.axis = sec_axis(~.*scale, name = "Method 2 weighted density (count)")) +
-  theme(legend.position = "bottom")
-
-legend <- get_legend(plot.weight)
-plot.weight <- plot.weight + theme(legend.position = "none")
-
-grid.arrange(plot.unweight, plot.weight, legend, layout_matrix = rbind(c(1, 2), c(3, 3)),
-             widths = c(2.7, 2.7), heights = c(2.5, 0.2))
-```
-
-
-# variance analysis
+# Analyze evolution of intra-group variance in interactions over time
 ```{r, eval = FALSE}
-df.vars <- df.create(intra.graphs.wednesday, session = 'Wednesday', lab = c(1, 1), week = c(1, 2),
+df.vars <- df.create(intra.graphs.wednesday, session = 'Wednesday', lab = c(1, 1), 
+                     week = c(1, 2),
                      method = 2, func = 'variance') %>%
   mutate(lab.week = paste('L', lab, 'W', week, sep = ''))
 
