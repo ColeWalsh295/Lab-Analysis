@@ -3,9 +3,8 @@ output:
   pdf_document: default
   html_document: default
 ---
-```{r}
+```{r, results = 'hide', message = FALSE, warning = FALSE}
 source('GraphBuilder.R')
-library(RColorBrewer)
 library(reshape2)
 library(ggplot2)
 library(NetworkDistance)
@@ -15,26 +14,6 @@ theme_set(theme_classic(base_size = 10))
 ```
 
 ```{r}
-graph.from.adjacency <- function(file){
-  matrix <- read.csv(file, header = TRUE, row.names = 1, check.names = FALSE, na.strings = "")
-  matrix[is.na(matrix)] <- 0
-  g <- graph_from_adjacency_matrix(as.matrix(matrix), mode = "undirected", weighted = 'count')
-  g <- add.graph.attributes(g, weight = FALSE)
-  E(g)$group <- ifelse(substr(ends(g, E(g))[, 1], 1, 1) == substr(ends(g, E(g))[, 2], 1, 1), 
-                       'within', 'between')
-  return(g)
-}
-
-plot.graph <- function(g){
-  pal <- brewer.pal(length(unique(V(g)$group)), "Set1")
-  par(mar = c(0, 0, 0, 0))
-  g$palette <- categorical_pal(max(V(g)$group))
-  V(g)$color <- V(g)$group
-
-  plot(g, edge.width = E(g)$weight, #vertex.color = pal[as.numeric(as.factor(vertex_attr(g, "group")))], 
-       edge.color = E(g)$color, vertex.size = V(g)$size, layout = layout_with_gem(g), edge.curved = 0.2, vertex.label = NA, edge.lty = E(g)$line.type)
-}
-
 density.calc <- function(g, method = 1){
   d <- edge_density(g)
   dw <- ifelse(method == 1, edge_density(g) * sum(E(g)$time) / length(E(g)), edge_density(g) * sum(E(g)$count) / length(E(g)))
@@ -253,7 +232,7 @@ grid.arrange(plot.unweight, plot.weight, legend, layout_matrix = rbind(c(1, 2), 
 
 
 # variance analysis
-```{r}
+```{r, eval = FALSE}
 df.vars <- df.create(intra.graphs.wednesday, session = 'Wednesday', lab = c(1, 1), week = c(1, 2),
                      method = 2, func = 'variance') %>%
   mutate(lab.week = paste('L', lab, 'W', week, sep = ''))

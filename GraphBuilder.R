@@ -3,9 +3,28 @@ library(reshape2)
 library(tidyr)
 library(igraph)
 library(gtools)
+library(RColorBrewer)
+library(docstring)
 
-create.graph <- function(file1, nvid1, offset1 = 0, file2 = NULL, nvid2 = NULL, offset2 = 0, method = 1){
-  # Read data and clean
+
+create.graph <- function(file1, nvid1, offset1 = 0, file2 = NULL, nvid2 = NULL, offset2 = 0, 
+                         method = 1){
+#' Create a graph
+#' 
+#' Create graph object from up to two BORIS files using the SCAN/SKIP methods
+#' 
+#' @param file1 First BORIS file
+#' @param nvid1 Number of videos used in first BORIS file
+#' @param offset1 Manual offset to apply to file1 times --- to be used only if offset not applied in 
+#' BORIS
+#' @param file2 Second BORIS file
+#' @param nvid2 Number of videos used in second BORIS file
+#' @param offset2 Manual offset to apply to file2 times --- to be used only if offset not applied in 
+#' BORIS
+#' @param method Either 1 or 2 (will be updated to Scna/Skip in a future version)
+
+  
+  # Read data
   if(!is.null(file2)){
     df.1 <- read.csv(file1, skip = nvid1 + 14, stringsAsFactors = FALSE)
     df.1$Time <- df.1$Time + offset1
@@ -18,26 +37,28 @@ create.graph <- function(file1, nvid1, offset1 = 0, file2 = NULL, nvid2 = NULL, 
     df$Time <- df$Time + offset1
   }
   
+  # Extract only time, subject, and behaviour information
   if(method == 1){
     df <- df[, c('Time', 'Subject', 'Behavior')] %>%
       rowwise() %>%
-      mutate(Subject = strsplit(Subject, '-')[[1]][1])
+      mutate(Subject = strsplit(Subject, '-')[[1]][1]) # extract labels before hyphens
     
-    # dcast
+    # dcast so we have location of each student at each timestamp in the data
     df.dcast <- dcast(df, Time ~ Subject, value.var = 'Behavior')
-    df.fill <- fill(df.dcast, -Time) %>%
+    df.fill <- fill(df.dcast, -Time) %>% # down fill data until students change location
       select(-c('NA'))
-    df.fill[is.na(df.fill)] <- 'StudentExit'
+    df.fill[is.na(df.fill)] <- 'StudentExit' # fill empty locations with StudentExit
     
     cols.students <- colnames(df.fill)[2:ncol(df.fill)]
     
-    cols.comb <- unlist(lapply(combn(colnames(df.fill)[2:ncol(df.fill)], 2, simplify = FALSE), paste, 
-                               collapse = ':'))
+    cols.comb <- unlist(lapply(combn(cols.students, 2, simplify = FALSE), paste, 
+                               collapse = ':')) # get every pair of possible students
     
-    #Aggregate times and contruct student interactions dataframe
+    # create empty vector of interaction times for all pairs of students
     times.vec <- rep(0, length(cols.comb))
     names(times.vec) <- cols.comb
     
+    # aggregate times for all student-student interactions
     for (row in 1:(nrow(df.fill) - 1)){
       for (col1 in 1:(ncol(df.fill) - 1)){
         for (col2 in (col1 + 1):ncol(df.fill)){
@@ -48,6 +69,7 @@ create.graph <- function(file1, nvid1, offset1 = 0, file2 = NULL, nvid2 = NULL, 
       }
     }
     
+    # construct dataframe of student-student interactions
     df.times <- data.frame(times.vec)
     df.times$Students <- row.names(df.times)
     row.names(df.times) <- c()
@@ -65,15 +87,15 @@ create.graph <- function(file1, nvid1, offset1 = 0, file2 = NULL, nvid2 = NULL, 
     E(g)$group <- ifelse(substr(ends(g, E(g))[, 1], 1, 1) == substr(ends(g, E(g))[, 2], 1, 1), 
                          'within', 'between')
     
-    E(g)$time <- df.times$Time/60
+    E(g)$time <- df.times$Time/60 # seconds to minutes
     E(g)[E(g)$group == 'within']$time <- 1/60
-    E(g)$weight <- E(g)$time/max(E(g)$time) * 5
+    E(g)$weight <- E(g)$time/max(E(g)$time) * 5 # 5 is a normalization factor
     
     E(g)$line.type <- 2 * (E(g)$group == 'within') + 1
-  } else {
+  } else { # for method 2, we used the comment information as well
     df <- df[, c('Time', 'Subject', 'Behavior', 'Comment')] %>%
       rowwise() %>%
-      mutate(Subject = strsplit(Subject, '-')[[1]][1],
+      mutate(Subject = strsplit(Subject, '-')[[1]][1], # extract only labels before hyphens
              Behavior = strsplit(Behavior, '->')[[1]][2])
     
     # need to add a TA handler too
@@ -140,7 +162,28 @@ create.graph <- function(file1, nvid1, offset1 = 0, file2 = NULL, nvid2 = NULL, 
   
 }
 
+graph.from.adjacency <- function(file){
+#' Create a graph
+#' 
+#' Creates a graph object from an adjacency matrix
+#' 
+#' @param file adjacency matrix in csv format
+  matrix <- read.csv(file, header = TRUE, row.names = 1, check.names = FALSE, na.strings = "")
+  matrix[is.na(matrix)] <- 0
+  g <- graph_from_adjacency_matrix(as.matrix(matrix), mode = "undirected", weighted = 'count')
+  g <- add.graph.attributes(g, weight = FALSE)
+  E(g)$group <- ifelse(substr(ends(g, E(g))[, 1], 1, 1) == substr(ends(g, E(g))[, 2], 1, 1), 
+                       'within', 'between')
+  return(g)
+}
+
 add.graph.attributes <- function(g, weight = TRUE){
+#' Add graph attributes
+#' 
+#' Adds certain attributes that will be used in graph plotting and/or analysis
+#' 
+#' @param g graph object
+#' @param weight boolean, whether to use times/counts in calculation of edge weight aesthetic
   
   if(!weight){
     E(g)$weight <- E(g)$count/max(E(g)$count) * 5
@@ -156,4 +199,19 @@ add.graph.attributes <- function(g, weight = TRUE){
   
   return(g)
   
+}
+
+plot.graph <- function(g){
+#' Plot a graph
+#' 
+#' Plots a SNA graph with specified attributes
+#' 
+#' @param g graph object
+  pal <- brewer.pal(length(unique(V(g)$group)), "Set1")
+  par(mar = c(0, 0, 0, 0))
+  g$palette <- categorical_pal(max(V(g)$group))
+  V(g)$color <- V(g)$group
+  
+  plot(g, edge.width = E(g)$weight, #vertex.color = pal[as.numeric(as.factor(vertex_attr(g, "group")))], 
+       edge.color = E(g)$color, vertex.size = V(g)$size, layout = layout_with_gem(g), edge.curved = 0.2, vertex.label = NA, edge.lty = E(g)$line.type)
 }
