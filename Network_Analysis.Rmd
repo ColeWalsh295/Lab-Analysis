@@ -96,31 +96,28 @@ reliability <- function(g1, g2, method = 1, normalize = FALSE){
 # Load scan method graphs
 ## Wednesday section
 ```{r}
-g.scan.9.11 <- boris.to.adjacency(file1 = 'C:/Users/Cole/Box Sync/Network analysis/Exported_Data/P1112_Fall2019/Scan_Method/Scan_9_11_cam1_CW.csv',
-                            file2 = 'C:/Users/Cole/Box Sync/Network analysis/Exported_Data/P1112_Fall2019/Scan_Method/Scan_9_11_cam2_CW.csv', nvid1 = 3,
-                            nvid2 = 6, filename = '9-11-adj.csv')
-
+g.scan.9.11 <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1112_Fall2019/Scan_Method/Scan_9_11_CW.csv', 
+                                    method = 'scan', name = '9-11 Scan')
 
 plot.graph(g.scan.9.11)
 
-g.scan.9.18 = create.graph(file1 = 'C:/Users/Cole/Box Sync/Network analysis/Exported_Data/P1112_Fall2019/Scan_Method/Scan_9_18_cam1_CW.csv',
-                           file2 = 'C:/Users/Cole/Box Sync/Network analysis/Exported_Data/P1112_Fall2019/Scan_Method/Scan_9_18_cam2_CW.csv', nvid1 = 5,
-                           nvid2 = 7, name = '9-18 Scan')
+g.scan.9.18 <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1112_Fall2019/Scan_Method/Scan_9_18_CW.csv', 
+                                    method = 'scan', name = '9-18 Scan')
 plot.graph(g.scan.9.18)
 
-g.scan.9.25 = create.graph(file1 = 'C:/Users/Cole/Box Sync/Network analysis/Exported_Data/P1112_Fall2019/Scan_Method/Scan_9_25_cam_CW.csv', nvid1 = 1, 
-                           name = '9-25 Scan')
+g.scan.9.25 <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1112_Fall2019/Scan_Method/Scan_9_25_CW.csv', 
+                                    method = 'scan', name = '9-25 Scan')
 plot.graph(g.scan.9.25)
 ```
 
 ## Monday section
 ```{r}
 g.scan.9.16 <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1112_Fall2019/Scan_Method/Scan_9_16_DK.csv', 
-                                    name = '9-16 Scan')
+                                    method = 'scan', name = '9-16 Scan')
 plot.graph(g.scan.9.16)
 
 g.scan.9.30 <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1112_Fall2019/Scan_Method/Scan_9_30_DK.csv', 
-                                    name = '9-30 Scan')
+                                    method = 'scan', name = '9-30 Scan')
 plot.graph(g.scan.9.30)
 ```
 
@@ -129,40 +126,37 @@ plot.graph(g.scan.9.30)
 ## Wednesday section
 ```{r}
 g.skip.9.11 <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1112_Fall2019/Skip_Method/Skip_9_11_DK.csv', 
-                                    name = '9-11 Skip')
+                                    method = 'skip', name = '9-11 Skip')
 plot.graph(g.skip.9.11)
 
 g.skip.9.18 <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1112_Fall2019/Skip_Method/Skip_9_18_DK.csv', 
-                                    name = '9-28 Skip')
+                                    method = 'skip', name = '9-18 Skip')
 
 V(g.skip.9.18)$name <- c('1A', '1B', '2C', '2B', '2A', '3A', '3C', '3B', '4A', '4B', '4C',
                          '5A', '5B', '5C', '6A', '6B', '6C', '7A', '7B')
 
 plot.graph(g.skip.9.18)
 
-g.skip.9.25 = create.graph(file1 = 'C:/Users/Cole/Box Sync/Network analysis/Exported_Data/P1112_Fall2019/Skip_Method/Skip_9_25_cam1_CW.csv',
-                           file2 = 'C:/Users/Cole/Box Sync/Network analysis/Exported_Data/P1112_Fall2019/Skip_Method/Skip_9_25_cam2_CW.csv',
-                           nvid1 = 1, nvid2 = 1, method = 2, name = '9-25 Skip')
+g.skip.9.25 <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1112_Fall2019/Skip_Method/Skip_9_25_CW.csv', 
+                                    method = 'skip', name = '9-25 Skip')
 plot.graph(g.skip.9.25)
 
 g.skip.10.9 <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1112_Fall2019/Skip_Method/Skip_10_9_DK.csv', 
-                                    name = '10-9 Skip')
+                                    method = 'skip', name = '10-9 Skip')
 plot.graph(g.skip.10.9)
 ```
 
 # Check interrater reliability for 9-18
 ```{r, warning = FALSE, message = FALSE}
-g.scan.9.18.DK = create.graph(file1 = 'C:/Users/Cole/Box Sync/Network analysis/Exported_Data/P1112_Fall2019/Scan_Method/Scan_9_18_cam1_DK.csv',
-                              file2 = 'C:/Users/Cole/Box Sync/Network analysis/Exported_Data/P1112_Fall2019/Scan_Method/Scan_9_18_cam2_DK.csv', 
-                              nvid1 = 5, nvid2 = 7, offset1 = 142, method = 1) 
-# apply manual offset of 142 to first video file data
+g.scan.9.18.DK <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1112_Fall2019/Scan_Method/Scan_9_18_DK.csv', 
+                                       method = 'scan')
+
 print('Reliability of scan method between CW and DK for 9-18...')
 reliability(g.scan.9.18, g.scan.9.18.DK)
 reliability(g.scan.9.18, g.scan.9.18.DK, normalize = TRUE)
 
-g.skip.9.18.CW = create.graph(file1 = 'C:/Users/Cole/Box Sync/Network analysis/Exported_Data/P1112_Fall2019/Skip_Method/Skip_9_18_cam1_CW.csv',
-                              file2 = 'C:/Users/Cole/Box Sync/Network analysis/Exported_Data/P1112_Fall2019/Skip_Method/Skip_9_18_cam2_CW.csv', 
-                              nvid1 = 5, nvid2 = 7, method = 2)
+g.skip.9.18.CW <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1112_Fall2019/Skip_Method/Skip_9_18_CW.csv', 
+                                       method = 'skip')
 
 print('Reliability of skip method between CW and DK for 9-18...')
 reliability(g.skip.9.18, igraph::permute(g.skip.9.18.CW,
@@ -216,7 +210,7 @@ plot.weight <- ggplot(df.density %>%
   geom_point(size = 4, aes(shape = session)) +
   geom_line(stat = 'identity', size = 1) +
   facet_wrap(~method, scales = 'free', nrow = 2, strip.position = "left", 
-                labeller = as_labeller(c(one = "Weighted density (minutes)", 
+                labeller = as_labeller(c(one = "Weighted density (seconds)", 
                                          two = "Weighted density (count)"))) +
   labs(x = 'Lab week') +
   scale_color_manual(name = 'Method', values = c('#0072B2', '#E69F00'), 

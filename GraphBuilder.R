@@ -179,38 +179,42 @@ boris.to.adjacency <- function(file1, nvid1, offset1 = 0, file2 = NULL, nvid2 = 
   
 }
 
-graph.from.adjacency <- function(file, name = ''){
+graph.from.adjacency <- function(file, method, name = ''){
 #' Create a graph
 #' 
 #' Creates a graph object from an adjacency matrix
 #' 
 #' @param file adjacency matrix in csv format
+#' @param method the method used to produce BORIS files, either scan or skip
+#' @param name optional parameter for title of graph
 #' 
 #' returns a graph object
-#' 
+  
   matrix <- read.csv(file, header = TRUE, row.names = 1, check.names = FALSE, 
                      na.strings = "")
   matrix[is.na(matrix)] <- 0
   g <- graph_from_adjacency_matrix(as.matrix(matrix), mode = "undirected", 
-                                   weighted = 'count')
-  g <- add.graph.attributes(g, weight = FALSE, name = name)
+                                   weighted = ifelse(method == 'scan', 'time', 'count'))
+  g <- add.graph.attributes(g, name = name, method = method)
   E(g)$group <- ifelse(substr(ends(g, E(g))[, 1], 1, 1) == substr(ends(g, E(g))[, 2], 1, 
                                                                   1), 'within', 'between')
   return(g)
 }
 
-add.graph.attributes <- function(g, name, weight = TRUE){
+add.graph.attributes <- function(g, name, method){
 #' Add graph attributes
 #' 
 #' Adds certain attributes that will be used in graph plotting and/or analysis
 #' 
 #' @param g graph object
-#' @param weight boolean, whether to use times/counts in calculation of edge weight 
-#' aesthetic
+#' @param name title of graph
+#' @param method method used to produce BORIS files
 #' 
 #' returns a graph object
   
-  if(!weight){
+  if(method == 'scan'){
+    E(g)$weight <- E(g)$time/max(E(g)$time) * 5
+  } else {
     E(g)$weight <- E(g)$count/max(E(g)$count) * 5
   }
   
