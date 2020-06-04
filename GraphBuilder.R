@@ -25,6 +25,8 @@ create.graph <- function(file1, nvid1, offset1 = 0, file2 = NULL, nvid2 = NULL,
 #' BORIS
 #' @param method Either 1 or 2 (will be updated to Scna/Skip in a future version)
 #' @param optional graph title
+#' 
+#' returns a graph object
 
   
   # Read data
@@ -178,6 +180,9 @@ graph.from.adjacency <- function(file, name = ''){
 #' Creates a graph object from an adjacency matrix
 #' 
 #' @param file adjacency matrix in csv format
+#' 
+#' returns a graph object
+#' 
   matrix <- read.csv(file, header = TRUE, row.names = 1, check.names = FALSE, 
                      na.strings = "")
   matrix[is.na(matrix)] <- 0
@@ -197,6 +202,8 @@ add.graph.attributes <- function(g, name, weight = TRUE){
 #' @param g graph object
 #' @param weight boolean, whether to use times/counts in calculation of edge weight 
 #' aesthetic
+#' 
+#' returns a graph object
   
   if(!weight){
     E(g)$weight <- E(g)$count/max(E(g)$count) * 5
@@ -222,6 +229,9 @@ plot.graph <- function(g){
 #' Plots a SNA graph with specified attributes
 #' 
 #' @param g graph object
+#' 
+#' returns a plot object
+#' 
   pal <- brewer.pal(length(unique(V(g)$group)), "Set1")
   par(mar = c(0, 0, 0, 0))
   g$palette <- categorical_pal(max(V(g)$group))

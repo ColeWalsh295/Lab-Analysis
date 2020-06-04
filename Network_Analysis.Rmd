@@ -11,13 +11,17 @@ library(ggplot2)
 library(NetworkDistance)
 library(sna)
 library(gridExtra)
+library(docstring)
 theme_set(theme_classic(base_size = 10))
 ```
 
 # Define function for later analyses
 ```{r}
 density.calc <- function(g, method = 1){
-  d <- edge_density(g)
+  
+  d <- edge_density(g) # calculate unweighted density of graph
+  # calculate weighted density using edge weights (either time or count depending on 
+  # method used in video coding)
   dw <- ifelse(method == 1, edge_density(g) * sum(E(g)$time) / length(E(g)), 
                edge_density(g) * sum(E(g)$count) / length(E(g)))
   
@@ -89,66 +93,82 @@ reliability <- function(g1, g2, method = 1, normalize = FALSE){
 }
 ```
 
-# Load 9-11 files and draw graphs
+# Load scan method graphs
+## Wednesday section
 ```{r}
-g.inter.9.11 <- create.graph(file1 = 'C:/Users/Cole/Box Sync/Network analysis/Exported_Data/P1112_Fall2019/Scan_Method/Scan_9_11_cam1_CW.csv',
-                             file2 = 'C:/Users/Cole/Box Sync/Network analysis/Exported_Data/P1112_Fall2019/Scan_Method/Scan_9_11_cam2_CW.csv', nvid1 = 3,
-                             nvid2 = 6, name = '9-11 Scan')
-plot.graph(g.inter.9.11)
+g.scan.9.11 <- create.graph(file1 = 'C:/Users/Cole/Box Sync/Network analysis/Exported_Data/P1112_Fall2019/Scan_Method/Scan_9_11_cam1_CW.csv',
+                            file2 = 'C:/Users/Cole/Box Sync/Network analysis/Exported_Data/P1112_Fall2019/Scan_Method/Scan_9_11_cam2_CW.csv', nvid1 = 3,
+                            nvid2 = 6, name = '9-11 Scan')
+plot.graph(g.scan.9.11)
 
-g.intra.9.11 <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1112_Fall2019/Skip_Method/Skip_9_11_DK.csv')
-plot.graph(g.intra.9.11)
+g.scan.9.18 = create.graph(file1 = 'C:/Users/Cole/Box Sync/Network analysis/Exported_Data/P1112_Fall2019/Scan_Method/Scan_9_18_cam1_CW.csv',
+                           file2 = 'C:/Users/Cole/Box Sync/Network analysis/Exported_Data/P1112_Fall2019/Scan_Method/Scan_9_18_cam2_CW.csv', nvid1 = 5,
+                           nvid2 = 7, name = '9-18 Scan')
+plot.graph(g.scan.9.18)
+
+g.scan.9.25 = create.graph(file1 = 'C:/Users/Cole/Box Sync/Network analysis/Exported_Data/P1112_Fall2019/Scan_Method/Scan_9_25_cam_CW.csv', nvid1 = 1, 
+                           name = '9-25 Scan')
+plot.graph(g.scan.9.25)
 ```
 
-# Load 9-18 files and draw graphs
+## Monday section
 ```{r}
-g.inter.9.18 = create.graph(file1 = 'C:/Users/Cole/Box Sync/Network analysis/Exported_Data/P1112_Fall2019/Scan_Method/Scan_9_18_cam1_CW.csv',
-                            file2 = 'C:/Users/Cole/Box Sync/Network analysis/Exported_Data/P1112_Fall2019/Scan_Method/Scan_9_18_cam2_CW.csv', nvid1 = 5,
-                            nvid2 = 7)
-plot.graph(g.inter.9.18)
+g.scan.9.16 <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1112_Fall2019/Scan_Method/Scan_9_16_DK.csv', 
+                                    name = '9-16 Scan')
+plot.graph(g.scan.9.16)
 
-g.intra.9.18 <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1112_Fall2019/Skip_Method/Skip_9_18_DK.csv')
-
-# rename nodes to agree with reliability check graph below
-V(g.intra.9.18)$name <- c('1A', '1B', '2C', '2B', '2A', '3A', '3C', '3B', '4A', '4B', '4C',
-                          '5A', '5B', '5C', '6A', '6B', '6C', '7A', '7B')
-
-plot.graph(g.intra.9.18)
+g.scan.9.30 <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1112_Fall2019/Scan_Method/Scan_9_30_DK.csv', 
+                                    name = '9-30 Scan')
+plot.graph(g.scan.9.30)
 ```
 
-# Load 9-25 files and draw graphs
-```{r}
-g.inter.9.25 = create.graph(file1 = 'C:/Users/Cole/Box Sync/Network analysis/Exported_Data/P1112_Fall2019/Scan_Method/Scan_9_25_cam_CW.csv', nvid1 = 1)
-plot.graph(g.inter.9.25)
 
-g.intra.9.25 = create.graph(file1 = 'C:/Users/Cole/Box Sync/Network analysis/Exported_Data/P1112_Fall2019/Skip_Method/Skip_9_25_cam1_CW.csv',
-                            file2 = 'C:/Users/Cole/Box Sync/Network analysis/Exported_Data/P1112_Fall2019/Skip_Method/Skip_9_25_cam2_CW.csv',
-                            nvid1 = 1, nvid2 = 1, method = 2)
-plot.graph(g.intra.9.25)
+# Load skip method graphs
+## Wednesday section
+```{r}
+g.skip.9.11 <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1112_Fall2019/Skip_Method/Skip_9_11_DK.csv', 
+                                    name = '9-11 Skip')
+plot.graph(g.skip.9.11)
+
+g.skip.9.18 <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1112_Fall2019/Skip_Method/Skip_9_18_DK.csv', 
+                                    name = '9-28 Skip')
+
+V(g.skip.9.18)$name <- c('1A', '1B', '2C', '2B', '2A', '3A', '3C', '3B', '4A', '4B', '4C',
+                         '5A', '5B', '5C', '6A', '6B', '6C', '7A', '7B')
+
+plot.graph(g.skip.9.18)
+
+g.skip.9.25 = create.graph(file1 = 'C:/Users/Cole/Box Sync/Network analysis/Exported_Data/P1112_Fall2019/Skip_Method/Skip_9_25_cam1_CW.csv',
+                           file2 = 'C:/Users/Cole/Box Sync/Network analysis/Exported_Data/P1112_Fall2019/Skip_Method/Skip_9_25_cam2_CW.csv',
+                           nvid1 = 1, nvid2 = 1, method = 2, name = '9-25 Skip')
+plot.graph(g.skip.9.25)
+
+g.skip.10.9 <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1112_Fall2019/Skip_Method/Skip_10_9_DK.csv', 
+                                    name = '10-9 Skip')
+plot.graph(g.skip.10.9)
 ```
 
 # Check interrater reliability for 9-18
 ```{r, warning = FALSE, message = FALSE}
-g.inter.9.18.DK = create.graph(file1 = 'C:/Users/Cole/Box Sync/Network analysis/Exported_Data/P1112_Fall2019/Scan_Method/Scan_9_18_cam1_DK.csv',
-                            file2 = 'C:/Users/Cole/Box Sync/Network analysis/Exported_Data/P1112_Fall2019/Scan_Method/Scan_9_18_cam2_DK.csv', 
-                            nvid1 = 5, nvid2 = 7, offset1 = 142, method = 1) # apply manual
-# offset of 142 to first video file data
+g.scan.9.18.DK = create.graph(file1 = 'C:/Users/Cole/Box Sync/Network analysis/Exported_Data/P1112_Fall2019/Scan_Method/Scan_9_18_cam1_DK.csv',
+                              file2 = 'C:/Users/Cole/Box Sync/Network analysis/Exported_Data/P1112_Fall2019/Scan_Method/Scan_9_18_cam2_DK.csv', 
+                              nvid1 = 5, nvid2 = 7, offset1 = 142, method = 1) 
+# apply manual offset of 142 to first video file data
+print('Reliability of scan method between CW and DK for 9-18...')
+reliability(g.scan.9.18, g.scan.9.18.DK)
+reliability(g.scan.9.18, g.scan.9.18.DK, normalize = TRUE)
 
-plot.graph(g.inter.9.18.DK)
+g.skip.9.18.CW = create.graph(file1 = 'C:/Users/Cole/Box Sync/Network analysis/Exported_Data/P1112_Fall2019/Skip_Method/Skip_9_18_cam1_CW.csv',
+                              file2 = 'C:/Users/Cole/Box Sync/Network analysis/Exported_Data/P1112_Fall2019/Skip_Method/Skip_9_18_cam2_CW.csv', 
+                              nvid1 = 5, nvid2 = 7, method = 2)
 
-reliability(g.inter.9.18, g.inter.9.18.DK)
-reliability(g.inter.9.18, g.inter.9.18.DK, normalize = TRUE)
-
-g.intra.9.18.CW = create.graph(file1 = 'C:/Users/Cole/Box Sync/Network analysis/Exported_Data/P1112_Fall2019/Skip_Method/Skip_9_18_cam1_CW.csv',
-                            file2 = 'C:/Users/Cole/Box Sync/Network analysis/Exported_Data/P1112_Fall2019/Skip_Method/Skip_9_18_cam2_CW.csv', 
-                            nvid1 = 5, nvid2 = 7, method = 2)
-
-reliability(g.intra.9.18, igraph::permute(g.intra.9.18.CW, 
-                                          match(V(g.intra.9.18.CW)$name,
-                                                V(g.intra.9.18)$name)), method = 2)
-reliability(g.intra.9.18, igraph::permute(g.intra.9.18.CW, 
-                                          match(V(g.intra.9.18.CW)$name,
-                                                V(g.intra.9.18)$name)), method = 2,
+print('Reliability of skip method between CW and DK for 9-18...')
+reliability(g.skip.9.18, igraph::permute(g.skip.9.18.CW,
+                                         match(V(g.skip.9.18.CW)$name,
+                                               V(g.skip.9.18)$name)), method = 2)
+reliability(g.skip.9.18, igraph::permute(g.skip.9.18.CW, 
+                                         match(V(g.skip.9.18.CW)$name,
+                                               V(g.skip.9.18)$name)), method = 2,
             normalize = TRUE)
 ```
 
@@ -161,47 +181,47 @@ get_legend<-function(myggplot){
   return(legend)
 }
 
-inter.graphs.wednesday <- list(g.inter.9.11, g.inter.9.18, g.inter.9.25)
-intra.graphs.wednesday <- list(g.intra.9.11, g.intra.9.18, g.intra.9.25)
+scan.graphs.wednesday <- list(g.scan.9.11, g.scan.9.18, g.scan.9.25)
+skip.graphs.wednesday <- list(g.skip.9.11, g.skip.9.18, g.skip.9.25, g.skip.10.9)
+scan.graphs.monday <- list(g.scan.9.16, g.scan.9.30)
 
-df.density <- rbind(df.create(inter.graphs.wednesday, session = 'Wednesday', 
-                              lab = c(1, 1, 2),  week = c(1, 2, 3), method = 1), 
-                    df.create(intra.graphs.wednesday, session = 'Wednesday', 
-                              lab = c(1, 1, 2), week = c(1, 2, 3), method = 2)) %>%
+df.density <- rbind(df.create(scan.graphs.wednesday, session = 'Wednesday', 
+                              lab = c(1, 1, 2),  week = c(1, 2, 1), method = 1), 
+                    df.create(skip.graphs.wednesday, session = 'Wednesday', 
+                              lab = c(1, 1, 2, 2), week = c(1, 2, 1, 2), method = 2),
+                    df.create(scan.graphs.monday, session = 'Monday', 
+                              lab = c(1, 2), week = c(1, 1), method = 1)) %>%
   mutate(lab.week = paste('L', lab, 'W', week, sep = ''),
-         method.lab = paste('M', method, 'L', lab)) %>%
+         method.session = paste('M', method, 'L', session)) %>%
   melt(., measure.vars = c('density', 'density.weighted'))
 
 plot.unweight <- ggplot(df.density %>%
          filter(variable == 'density'), 
-         aes(x = as.factor(week), y = value, group = method, color = as.factor(method))) +
-  geom_point(size = 4) +
+         aes(x = as.factor(lab.week), y = value, group = method.session, 
+             color = as.factor(method))) +
+  geom_point(size = 4, aes(shape = session)) +
   geom_line(stat = 'identity', size = 1) +
   labs(x = 'Lab week', y = 'Unweighted Density') +
   scale_color_manual(name = 'Method', values = c('#0072B2', '#E69F00')) +
-  # scale_shape_manual(name = 'Lab Number', values = c(16, 15)) +
+  scale_shape_manual(name = 'Lab Number', values = c(16, 15)) +
   theme(legend.position = "none")
 
 plot.weight <- ggplot(df.density %>%
                         filter(variable == 'density.weighted') %>%
                         mutate(method = ifelse(method == 1, 'one', 'two')), 
-                      aes(x = as.factor(week), y = value, group = method, 
-                          color = as.factor(method))) +
-  geom_point(size = 4) +
+                      aes(x = as.factor(lab.week), y = value, group = method.session, 
+                          color = as.factor(method)), shape = as.factor(session)) +
+  geom_point(size = 4, aes(shape = session)) +
   geom_line(stat = 'identity', size = 1) +
   facet_wrap(~method, scales = 'free', nrow = 2, strip.position = "left", 
                 labeller = as_labeller(c(one = "Weighted density (minutes)", 
                                          two = "Weighted density (count)"))) +
-  #facet_wrap(~variable, scales = 'free', 
-  #labeller = labeller(variable = c('density' = 'Unweighted', 
-  #'density.weighted' = 'Weighted'))) +
   labs(x = 'Lab week') +
   scale_color_manual(name = 'Method', values = c('#0072B2', '#E69F00'), 
                      labels = c('Scan', 'Skip')) +
-  # scale_shape_manual(name = 'Lab session', values = c(16, 15), labels = c('A', 'B')) +
+  scale_shape_manual(name = 'Lab session', values = c(16, 15)) +
   theme(
   strip.background = element_blank(),
-  #strip.text.x = element_blank()
   strip.placement = "outside"
 ) +
   ylab(NULL) +
@@ -214,9 +234,9 @@ grid.arrange(plot.unweight, plot.weight, legend, layout_matrix = rbind(c(1, 2), 
              widths = c(2.7, 2.7), heights = c(2.5, 0.2))
 ```
 
-# Analyze evolution of intra-group variance in interactions over time
+# Analyze evolution of skip-group variance in scanactions over time
 ```{r, eval = FALSE}
-df.vars <- df.create(intra.graphs.wednesday, session = 'Wednesday', lab = c(1, 1), 
+df.vars <- df.create(skip.graphs.wednesday, session = 'Wednesday', lab = c(1, 1), 
                      week = c(1, 2),
                      method = 2, func = 'variance') %>%
   mutate(lab.week = paste('L', lab, 'W', week, sep = ''))
