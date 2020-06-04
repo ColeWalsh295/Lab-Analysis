@@ -7,8 +7,8 @@ library(RColorBrewer)
 library(docstring)
 
 
-create.graph <- function(file1, nvid1, offset1 = 0, file2 = NULL, nvid2 = NULL, 
-                         offset2 = 0, method = 1, name = ''){
+boris.to.adjacency <- function(file1, nvid1, offset1 = 0, file2 = NULL, nvid2 = NULL, 
+                         offset2 = 0, method = 1, filename = 'adjacencyMatrix.csv'){
 #' Create a graph
 #' 
 #' Create graph object from up to two BORIS files using the SCAN/SKIP methods
@@ -24,7 +24,7 @@ create.graph <- function(file1, nvid1, offset1 = 0, file2 = NULL, nvid2 = NULL,
 #' applied in 
 #' BORIS
 #' @param method Either 1 or 2 (will be updated to Scna/Skip in a future version)
-#' @param optional graph title
+#' @param filename filename and path of exported adjacency matrix
 #' 
 #' returns a graph object
 
@@ -96,12 +96,12 @@ create.graph <- function(file1, nvid1, offset1 = 0, file2 = NULL, nvid2 = NULL,
     
     E(g)$group <- ifelse(substr(ends(g, E(g))[, 1], 1, 1) == substr(ends(g, E(g))[, 2], 1, 
                                                                     1), 'within', 'between')
-    
-    E(g)$time <- df.times$Time/60 # seconds to minutes
-    E(g)[E(g)$group == 'within']$time <- 1/60
-    E(g)$weight <- E(g)$time/max(E(g)$time) * 5 # 5 is a normalization factor
-    
-    E(g)$line.type <- 2 * (E(g)$group == 'within') + 1
+    # 
+    E(g)$time <- df.times$Time 
+    E(g)[E(g)$group == 'within']$time <- 1
+    # E(g)$weight <- E(g)$time/max(E(g)$time) * 5 # 5 is a normalization factor
+    # 
+    # E(g)$line.type <- 2 * (E(g)$group == 'within') + 1
   } else { # for method 2, we used the comment information as well
     df <- df[, c('Time', 'Subject', 'Behavior', 'Comment')] %>%
       rowwise() %>%
@@ -160,16 +160,20 @@ create.graph <- function(file1, nvid1, offset1 = 0, file2 = NULL, nvid2 = NULL,
     
     g <- graph_from_data_frame(df.two.way, directed = FALSE)
     
-    E(g)$group <- ifelse(substr(ends(g, E(g))[, 1], 1, 1) == substr(ends(g, E(g))[, 2], 1, 
-                                                                    1), 'within', 'between')
-    
+    # E(g)$group <- ifelse(substr(ends(g, E(g))[, 1], 1, 1) == substr(ends(g, E(g))[, 2], 1, 
+    #                                                                 1), 'within', 'between')
+    # 
     E(g)$count <- df.two.way$N.ints
-    E(g)$weight <- E(g)$count/max(E(g)$count) * 5
-    
-    E(g)$line.type <- 1
+    # E(g)$weight <- E(g)$count/max(E(g)$count) * 5
+    # 
+    # E(g)$line.type <- 1
   }
   
-  g <- add.graph.attributes(g, name = name)
+  # g <- add.graph.attributes(g, name = name)
+  g <- igraph::permute(g, match(V(g)$name, sort(V(g)$name)))
+  a <- as_adjacency_matrix(g, attr = ifelse(method == 1, 'time', 'count'), type = 'both',
+                           sparse = FALSE)
+  write.csv(a, filename)
   return(g)
   
 }

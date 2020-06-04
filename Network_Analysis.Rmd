@@ -96,9 +96,11 @@ reliability <- function(g1, g2, method = 1, normalize = FALSE){
 # Load scan method graphs
 ## Wednesday section
 ```{r}
-g.scan.9.11 <- create.graph(file1 = 'C:/Users/Cole/Box Sync/Network analysis/Exported_Data/P1112_Fall2019/Scan_Method/Scan_9_11_cam1_CW.csv',
+g.scan.9.11 <- boris.to.adjacency(file1 = 'C:/Users/Cole/Box Sync/Network analysis/Exported_Data/P1112_Fall2019/Scan_Method/Scan_9_11_cam1_CW.csv',
                             file2 = 'C:/Users/Cole/Box Sync/Network analysis/Exported_Data/P1112_Fall2019/Scan_Method/Scan_9_11_cam2_CW.csv', nvid1 = 3,
-                            nvid2 = 6, name = '9-11 Scan')
+                            nvid2 = 6, filename = '9-11-adj.csv')
+
+
 plot.graph(g.scan.9.11)
 
 g.scan.9.18 = create.graph(file1 = 'C:/Users/Cole/Box Sync/Network analysis/Exported_Data/P1112_Fall2019/Scan_Method/Scan_9_18_cam1_CW.csv',
