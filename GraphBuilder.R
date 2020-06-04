@@ -91,17 +91,13 @@ boris.to.adjacency <- function(file1, nvid1, offset1 = 0, file2 = NULL, nvid2 = 
       select(-c('Students', 'times.vec')) %>%
       filter(Time > 0)
     
-    # Set vertex/edge attributes
+    # Set within group times to one second
     g <- graph_from_data_frame(df.times, directed = FALSE)
     
     E(g)$group <- ifelse(substr(ends(g, E(g))[, 1], 1, 1) == substr(ends(g, E(g))[, 2], 1, 
                                                                     1), 'within', 'between')
-    # 
     E(g)$time <- df.times$Time 
     E(g)[E(g)$group == 'within']$time <- 1
-    # E(g)$weight <- E(g)$time/max(E(g)$time) * 5 # 5 is a normalization factor
-    # 
-    # E(g)$line.type <- 2 * (E(g)$group == 'within') + 1
   } else { # for method 2, we used the comment information as well
     df <- df[, c('Time', 'Subject', 'Behavior', 'Comment')] %>%
       rowwise() %>%
@@ -212,15 +208,21 @@ add.graph.attributes <- function(g, name, method){
 #' 
 #' returns a graph object
   
+  E(g)$group <- ifelse(substr(ends(g, E(g))[, 1], 1, 1) == substr(ends(g, E(g))[, 2], 1, 
+                                                                  1), 'within', 'between')
+  
   if(method == 'scan'){
+    E(g)$time <- E(g)$time/60 # put time in units of minutes
     E(g)$weight <- E(g)$time/max(E(g)$time) * 5
+    E(g)$line.type <- 2 * (E(g)$group == 'within') + 1
   } else {
     E(g)$weight <- E(g)$count/max(E(g)$count) * 5
+    E(g)$line.type <- 1
   }
   
-  V(g)$group <- substr(V(g)$name, 1, 1)
-  
   E(g)$color <- adjustcolor('black', 0.5)
+  
+  V(g)$group <- substr(V(g)$name, 1, 1)
   
   V(g)$centr.deg <- centralization.degree(g)$res
   
