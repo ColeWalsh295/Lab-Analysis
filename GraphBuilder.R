@@ -173,6 +173,7 @@ boris.to.adjacency <- function(file1, nvid1, offset1 = 0, file2 = NULL, nvid2 = 
   g <- igraph::permute(g, match(V(g)$name, sort(V(g)$name)))
   a <- as_adjacency_matrix(g, attr = ifelse(method == 1, 'time', 'count'), type = 'both',
                            sparse = FALSE)
+  a[a == 0] <- ''
   write.csv(a, filename)
   return(g)
   
