@@ -91,23 +91,23 @@ reliability <- function(g1, g2, method = 1, normalize = FALSE){
 
 # Load 9-11 files and draw graphs
 ```{r}
-g.inter.9.11 <- create.graph(file1 = 'C:/Users/Cole/Documents/GRA_Spring2020/Student-Lab-Interactions/Videos/9_11/cam1.csv',
-                             file2 = 'C:/Users/Cole/Documents/GRA_Spring2020/Student-Lab-Interactions/Videos/9_11/cam2.csv', nvid1 = 3,
-                             nvid2 = 6)
+g.inter.9.11 <- create.graph(file1 = 'C:/Users/Cole/Box Sync/Network analysis/Exported_Data/P1112_Fall2019/Scan_Method/Scan_9_11_cam1_CW.csv',
+                             file2 = 'C:/Users/Cole/Box Sync/Network analysis/Exported_Data/P1112_Fall2019/Scan_Method/Scan_9_11_cam2_CW.csv', nvid1 = 3,
+                             nvid2 = 6, name = '9-11 Scan')
 plot.graph(g.inter.9.11)
 
-g.intra.9.11 <- graph.from.adjacency('C:/Users/Cole/Documents/GRA_Spring2020/Student-Lab-Interactions/Daniyar/9_11_intra.csv')
+g.intra.9.11 <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1112_Fall2019/Skip_Method/Skip_9_11_DK.csv')
 plot.graph(g.intra.9.11)
 ```
 
 # Load 9-18 files and draw graphs
 ```{r}
-g.inter.9.18 = create.graph(file1 = 'C:/Users/Cole/Documents/GRA_Spring2020/Student-Lab-Interactions/Videos/9_18/cam1.csv',
-                            file2 = 'C:/Users/Cole/Documents/GRA_Spring2020/Student-Lab-Interactions/Videos/9_18/cam2.csv', nvid1 = 5,
+g.inter.9.18 = create.graph(file1 = 'C:/Users/Cole/Box Sync/Network analysis/Exported_Data/P1112_Fall2019/Scan_Method/Scan_9_18_cam1_CW.csv',
+                            file2 = 'C:/Users/Cole/Box Sync/Network analysis/Exported_Data/P1112_Fall2019/Scan_Method/Scan_9_18_cam2_CW.csv', nvid1 = 5,
                             nvid2 = 7)
 plot.graph(g.inter.9.18)
 
-g.intra.9.18 <- graph.from.adjacency('C:/Users/Cole/Documents/GRA_Spring2020/Student-Lab-Interactions/Daniyar/9_18_intra.csv')
+g.intra.9.18 <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1112_Fall2019/Skip_Method/Skip_9_18_DK.csv')
 
 # rename nodes to agree with reliability check graph below
 V(g.intra.9.18)$name <- c('1A', '1B', '2C', '2B', '2A', '3A', '3C', '3B', '4A', '4B', '4C',
@@ -118,27 +118,29 @@ plot.graph(g.intra.9.18)
 
 # Load 9-25 files and draw graphs
 ```{r}
-g.inter.9.25 = create.graph(file1 = 'C:/Users/Cole/Documents/GRA_Spring2020/Student-Lab-Interactions/Videos/9_25/cam2.csv', nvid1 = 1)
+g.inter.9.25 = create.graph(file1 = 'C:/Users/Cole/Box Sync/Network analysis/Exported_Data/P1112_Fall2019/Scan_Method/Scan_9_25_cam_CW.csv', nvid1 = 1)
 plot.graph(g.inter.9.25)
 
-g.intra.9.25 = create.graph(file1 = 'C:/Users/Cole/Documents/GRA_Spring2020/Student-Lab-Interactions/Videos/9_25/intra/cam1.csv',
-                            file2 = 'C:/Users/Cole/Documents/GRA_Spring2020/Student-Lab-Interactions/Videos/9_25/intra/cam2.csv',
+g.intra.9.25 = create.graph(file1 = 'C:/Users/Cole/Box Sync/Network analysis/Exported_Data/P1112_Fall2019/Skip_Method/Skip_9_25_cam1_CW.csv',
+                            file2 = 'C:/Users/Cole/Box Sync/Network analysis/Exported_Data/P1112_Fall2019/Skip_Method/Skip_9_25_cam2_CW.csv',
                             nvid1 = 1, nvid2 = 1, method = 2)
 plot.graph(g.intra.9.25)
 ```
 
 # Check interrater reliability for 9-18
 ```{r, warning = FALSE, message = FALSE}
-g.inter.9.18.DK = create.graph(file1 = 'C:/Users/Cole/Documents/GRA_Spring2020/Student-Lab-Interactions/Daniyar/Camera1.csv',
-                            file2 = 'C:/Users/Cole/Documents/GRA_Spring2020/Student-Lab-Interactions/Daniyar/Camera2.csv', 
-                            nvid1 = 5, nvid2 = 7, offset1 = 142, method = 1)
+g.inter.9.18.DK = create.graph(file1 = 'C:/Users/Cole/Box Sync/Network analysis/Exported_Data/P1112_Fall2019/Scan_Method/Scan_9_18_cam1_DK.csv',
+                            file2 = 'C:/Users/Cole/Box Sync/Network analysis/Exported_Data/P1112_Fall2019/Scan_Method/Scan_9_18_cam2_DK.csv', 
+                            nvid1 = 5, nvid2 = 7, offset1 = 142, method = 1) # apply manual
+# offset of 142 to first video file data
+
 plot.graph(g.inter.9.18.DK)
 
 reliability(g.inter.9.18, g.inter.9.18.DK)
 reliability(g.inter.9.18, g.inter.9.18.DK, normalize = TRUE)
 
-g.intra.9.18.CW = create.graph(file1 = 'C:/Users/Cole/Documents/GRA_Spring2020/Student-Lab-Interactions/Videos/9_18/intra/cam1.csv',
-                            file2 = 'C:/Users/Cole/Documents/GRA_Spring2020/Student-Lab-Interactions/Videos/9_18/intra/cam2.csv', 
+g.intra.9.18.CW = create.graph(file1 = 'C:/Users/Cole/Box Sync/Network analysis/Exported_Data/P1112_Fall2019/Skip_Method/Skip_9_18_cam1_CW.csv',
+                            file2 = 'C:/Users/Cole/Box Sync/Network analysis/Exported_Data/P1112_Fall2019/Skip_Method/Skip_9_18_cam2_CW.csv', 
                             nvid1 = 5, nvid2 = 7, method = 2)
 
 reliability(g.intra.9.18, igraph::permute(g.intra.9.18.CW, 

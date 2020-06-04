@@ -7,21 +7,24 @@ library(RColorBrewer)
 library(docstring)
 
 
-create.graph <- function(file1, nvid1, offset1 = 0, file2 = NULL, nvid2 = NULL, offset2 = 0, 
-                         method = 1){
+create.graph <- function(file1, nvid1, offset1 = 0, file2 = NULL, nvid2 = NULL, 
+                         offset2 = 0, method = 1, name = ''){
 #' Create a graph
 #' 
 #' Create graph object from up to two BORIS files using the SCAN/SKIP methods
 #' 
 #' @param file1 First BORIS file
 #' @param nvid1 Number of videos used in first BORIS file
-#' @param offset1 Manual offset to apply to file1 times --- to be used only if offset not applied in 
+#' @param offset1 Manual offset to apply to file1 times --- to be used only if offset not 
+#' applied in 
 #' BORIS
 #' @param file2 Second BORIS file
 #' @param nvid2 Number of videos used in second BORIS file
-#' @param offset2 Manual offset to apply to file2 times --- to be used only if offset not applied in 
+#' @param offset2 Manual offset to apply to file2 times --- to be used only if offset not 
+#' applied in 
 #' BORIS
 #' @param method Either 1 or 2 (will be updated to Scna/Skip in a future version)
+#' @param optional graph title
 
   
   # Read data
@@ -62,8 +65,13 @@ create.graph <- function(file1, nvid1, offset1 = 0, file2 = NULL, nvid2 = NULL, 
     for (row in 1:(nrow(df.fill) - 1)){
       for (col1 in 1:(ncol(df.fill) - 1)){
         for (col2 in (col1 + 1):ncol(df.fill)){
-          if((df.fill[row, col1] == df.fill[row, col2]) & (df.fill[row, col1] != 'StudentExit')){
-            times.vec[paste(cols.students[col1 - 1], cols.students[col2 - 1], sep = ':')] <- times.vec[paste(cols.students[col1 - 1], cols.students[col2 - 1], sep = ':')] + df.fill[(row + 1), 'Time'] - df.fill[row, 'Time']
+          if((df.fill[row, col1] == df.fill[row, col2]) & 
+             (df.fill[row, col1] != 'StudentExit')){
+            times.vec[paste(cols.students[col1 - 1], cols.students[col2 - 1], 
+                            sep = ':')] <- times.vec[paste(cols.students[col1 - 1], 
+                                                           cols.students[col2 - 1], 
+                                                           sep = ':')] + 
+              df.fill[(row + 1),  'Time'] - df.fill[row, 'Time']
           }
         }
       }
@@ -84,8 +92,8 @@ create.graph <- function(file1, nvid1, offset1 = 0, file2 = NULL, nvid2 = NULL, 
     # Set vertex/edge attributes
     g <- graph_from_data_frame(df.times, directed = FALSE)
     
-    E(g)$group <- ifelse(substr(ends(g, E(g))[, 1], 1, 1) == substr(ends(g, E(g))[, 2], 1, 1), 
-                         'within', 'between')
+    E(g)$group <- ifelse(substr(ends(g, E(g))[, 1], 1, 1) == substr(ends(g, E(g))[, 2], 1, 
+                                                                    1), 'within', 'between')
     
     E(g)$time <- df.times$Time/60 # seconds to minutes
     E(g)[E(g)$group == 'within']$time <- 1/60
@@ -105,7 +113,8 @@ create.graph <- function(file1, nvid1, offset1 = 0, file2 = NULL, nvid2 = NULL, 
     df <- df %>%
       filter(Subject != 'TA' & Behavior != 'TA')
     
-    df.table <- do.call("rbind", replicate(3, df[(df$Behavior == 'Table') & (!is.na(df$Behavior)),],
+    df.table <- do.call("rbind", replicate(3, df[(df$Behavior == 'Table') & 
+                                                   (!is.na(df$Behavior)),], 
                                            simplify = FALSE))
     
     df.table[, 'Behavior'] <- c(rep('A', nrow(df.table)/3), rep('B', nrow(df.table)/3), 
@@ -136,9 +145,10 @@ create.graph <- function(file1, nvid1, offset1 = 0, file2 = NULL, nvid2 = NULL, 
     df$Interval <- round(df$Time/120)
     df <- df[!duplicated(df[, c('Subject', 'Behavior', 'Interval')]),]
     df$ordered <- as.numeric(apply(asc(df$Subject), 2, paste, 
-                                   collapse = '')) < as.numeric(apply(asc(df$Behavior), 2, paste, 
-                                                                      collapse = ''))
-    df[df$ordered == FALSE, c('Subject', 'Behavior')] <- df[df$ordered == FALSE, c('Behavior', 'Subject')]
+                                   collapse = '')) < as.numeric(apply(asc(df$Behavior), 2, 
+                                                                      paste, collapse = ''))
+    df[df$ordered == FALSE, c('Subject', 'Behavior')] <- df[df$ordered == FALSE, 
+                                                            c('Behavior', 'Subject')]
     df <- df %>%
       select(-c('ordered'))
     
@@ -148,8 +158,8 @@ create.graph <- function(file1, nvid1, offset1 = 0, file2 = NULL, nvid2 = NULL, 
     
     g <- graph_from_data_frame(df.two.way, directed = FALSE)
     
-    E(g)$group <- ifelse(substr(ends(g, E(g))[, 1], 1, 1) == substr(ends(g, E(g))[, 2], 1, 1), 
-                         'within', 'between')
+    E(g)$group <- ifelse(substr(ends(g, E(g))[, 1], 1, 1) == substr(ends(g, E(g))[, 2], 1, 
+                                                                    1), 'within', 'between')
     
     E(g)$count <- df.two.way$N.ints
     E(g)$weight <- E(g)$count/max(E(g)$count) * 5
@@ -157,33 +167,36 @@ create.graph <- function(file1, nvid1, offset1 = 0, file2 = NULL, nvid2 = NULL, 
     E(g)$line.type <- 1
   }
   
-  g <- add.graph.attributes(g)
+  g <- add.graph.attributes(g, name = name)
   return(g)
   
 }
 
-graph.from.adjacency <- function(file){
+graph.from.adjacency <- function(file, name = ''){
 #' Create a graph
 #' 
 #' Creates a graph object from an adjacency matrix
 #' 
 #' @param file adjacency matrix in csv format
-  matrix <- read.csv(file, header = TRUE, row.names = 1, check.names = FALSE, na.strings = "")
+  matrix <- read.csv(file, header = TRUE, row.names = 1, check.names = FALSE, 
+                     na.strings = "")
   matrix[is.na(matrix)] <- 0
-  g <- graph_from_adjacency_matrix(as.matrix(matrix), mode = "undirected", weighted = 'count')
-  g <- add.graph.attributes(g, weight = FALSE)
-  E(g)$group <- ifelse(substr(ends(g, E(g))[, 1], 1, 1) == substr(ends(g, E(g))[, 2], 1, 1), 
-                       'within', 'between')
+  g <- graph_from_adjacency_matrix(as.matrix(matrix), mode = "undirected", 
+                                   weighted = 'count')
+  g <- add.graph.attributes(g, weight = FALSE, name = name)
+  E(g)$group <- ifelse(substr(ends(g, E(g))[, 1], 1, 1) == substr(ends(g, E(g))[, 2], 1, 
+                                                                  1), 'within', 'between')
   return(g)
 }
 
-add.graph.attributes <- function(g, weight = TRUE){
+add.graph.attributes <- function(g, name, weight = TRUE){
 #' Add graph attributes
 #' 
 #' Adds certain attributes that will be used in graph plotting and/or analysis
 #' 
 #' @param g graph object
-#' @param weight boolean, whether to use times/counts in calculation of edge weight aesthetic
+#' @param weight boolean, whether to use times/counts in calculation of edge weight 
+#' aesthetic
   
   if(!weight){
     E(g)$weight <- E(g)$count/max(E(g)$count) * 5
@@ -196,6 +209,8 @@ add.graph.attributes <- function(g, weight = TRUE){
   V(g)$centr.deg <- centralization.degree(g)$res
   
   V(g)$size <- (V(g)$centr.deg + 1)/max(V(g)$centr.deg) * 15
+  
+  g$name <- name
   
   return(g)
   
@@ -212,6 +227,8 @@ plot.graph <- function(g){
   g$palette <- categorical_pal(max(V(g)$group))
   V(g)$color <- V(g)$group
   
-  plot(g, edge.width = E(g)$weight, #vertex.color = pal[as.numeric(as.factor(vertex_attr(g, "group")))], 
-       edge.color = E(g)$color, vertex.size = V(g)$size, layout = layout_with_gem(g), edge.curved = 0.2, vertex.label = NA, edge.lty = E(g)$line.type)
+  plot(g, edge.width = E(g)$weight, edge.color = E(g)$color, vertex.size = V(g)$size, 
+       layout = layout_with_gem(g), edge.curved = 0.2, vertex.label = NA, 
+       edge.lty = E(g)$line.type)
+  title(g$name, line = -20, adj = 0.1)
 }
