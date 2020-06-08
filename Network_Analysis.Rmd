@@ -119,6 +119,18 @@ plot.graph(g.scan.9.16)
 g.scan.9.30 <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1112_Fall2019/Scan_Method/Scan_9_30_DK.csv', 
                                     method = 'scan', name = '9-30 Scan')
 plot.graph(g.scan.9.30)
+
+g.scan.10.7 <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1112_Fall2019/Scan_Method/Scan_10_7_DK.csv', 
+                                    method = 'scan', name = '10-7 Scan')
+plot.graph(g.scan.10.7)
+
+g.scan.10.21 <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1112_Fall2019/Scan_Method/Scan_10_21_DK.csv', 
+                                    method = 'scan', name = '10-21 Scan')
+plot.graph(g.scan.10.21)
+
+g.scan.10.28 <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1112_Fall2019/Scan_Method/Scan_10_28_DK.csv', 
+                                    method = 'scan', name = '10-28 Scan')
+plot.graph(g.scan.10.28)
 ```
 
 
@@ -150,10 +162,34 @@ plot.graph(g.skip.10.9)
 ```{r, warning = FALSE, message = FALSE}
 g.scan.9.18.DK <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1112_Fall2019/Scan_Method/Scan_9_18_DK.csv', 
                                        method = 'scan')
+g.scan.9.18.MS <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1112_Fall2019/Scan_Method/Scan_9_18_MS.csv', method = 'scan')
+V(g.scan.9.18.MS)$name <- c('1A', '1B', '2A', '2B', '2C', '3A', '3B', '3C', '4A', '4B', '4C', '5A', '5B', '5C', '6B', '6A', '6C', '7A', '7B')
 
 print('Reliability of scan method between CW and DK for 9-18...')
 reliability(g.scan.9.18, g.scan.9.18.DK)
 reliability(g.scan.9.18, g.scan.9.18.DK, normalize = TRUE)
+
+print('Reliability of scan method between CW and MS for 9-18...')
+# reliability(g.scan.9.18, g.scan.9.18.MS)
+reliability(g.scan.9.18, igraph::permute(g.scan.9.18.MS,
+                                         match(V(g.scan.9.18.MS)$name,
+                                               V(g.scan.9.18)$name)), method = 1)
+# reliability(g.scan.9.18, g.scan.9.18.MS, normalize = TRUE)
+reliability(g.scan.9.18, igraph::permute(g.scan.9.18.MS, 
+                                         match(V(g.scan.9.18.MS)$name,
+                                               V(g.scan.9.18)$name)), method = 1,
+            normalize = TRUE)
+
+print('Reliability of scan method between DK and MS for 9-18...')
+# reliability(g.scan.9.18.DK, g.scan.9.18.MS)
+reliability(g.scan.9.18.DK, igraph::permute(g.scan.9.18.MS,
+                                         match(V(g.scan.9.18.MS)$name,
+                                               V(g.scan.9.18.DK)$name)), method = 1)
+# reliability(g.scan.9.18.DK, g.scan.9.18.MS, normalize = TRUE)
+reliability(g.scan.9.18.DK, igraph::permute(g.scan.9.18.MS,
+                                         match(V(g.scan.9.18.MS)$name,
+                                               V(g.scan.9.18.DK)$name)), method = 1,
+            normalize = TRUE)
 
 g.skip.9.18.CW <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1112_Fall2019/Skip_Method/Skip_9_18_CW.csv', 
                                        method = 'skip')
@@ -179,14 +215,16 @@ get_legend<-function(myggplot){
 
 scan.graphs.wednesday <- list(g.scan.9.11, g.scan.9.18, g.scan.9.25)
 skip.graphs.wednesday <- list(g.skip.9.11, g.skip.9.18, g.skip.9.25, g.skip.10.9)
-scan.graphs.monday <- list(g.scan.9.16, g.scan.9.30)
+scan.graphs.monday <- list(g.scan.9.16, g.scan.9.30, g.scan.10.7, g.scan.10.21, 
+                           g.scan.10.28)
 
 df.density <- rbind(df.create(scan.graphs.wednesday, session = 'Wednesday', 
                               lab = c(1, 1, 2),  week = c(1, 2, 1), method = 1), 
                     df.create(skip.graphs.wednesday, session = 'Wednesday', 
                               lab = c(1, 1, 2, 2), week = c(1, 2, 1, 2), method = 2),
                     df.create(scan.graphs.monday, session = 'Monday', 
-                              lab = c(1, 2), week = c(1, 1), method = 1)) %>%
+                              lab = c(1, 2, 2, 3, 3), week = c(1, 1, 2, 1, 2), 
+                              method = 1)) %>%
   mutate(lab.week = paste('L', lab, 'W', week, sep = ''),
          method.session = paste('M', method, 'L', session)) %>%
   melt(., measure.vars = c('density', 'density.weighted'))
