@@ -16,14 +16,12 @@ boris.to.adjacency <- function(file1, nvid1, offset1 = 0, file2 = NULL, nvid2 = 
 #' @param file1 First BORIS file
 #' @param nvid1 Number of videos used in first BORIS file
 #' @param offset1 Manual offset to apply to file1 times --- to be used only if offset not 
-#' applied in 
-#' BORIS
+#' applied in BORIS
 #' @param file2 Second BORIS file
 #' @param nvid2 Number of videos used in second BORIS file
 #' @param offset2 Manual offset to apply to file2 times --- to be used only if offset not 
-#' applied in 
-#' BORIS
-#' @param method Either 1 or 2 (will be updated to Scna/Skip in a future version)
+#' applied in BORIS
+#' @param method Either 1 or 2 (will be updated to Scan/Skip in a future version)
 #' @param filename filename and path of exported adjacency matrix
 #' 
 #' returns a graph object
