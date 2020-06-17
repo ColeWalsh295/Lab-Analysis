@@ -48,8 +48,11 @@ boris.to.adjacency <- function(file1, nvid1, offset1 = 0, file2 = NULL, nvid2 = 
     
     # dcast so we have location of each student at each timestamp in the data
     df.dcast <- dcast(df, Time ~ Subject, value.var = 'Behavior')
-    df.fill <- fill(df.dcast, -Time) %>% # down fill data until students change location
+    df.fill <- fill(df.dcast, -Time) 
+    if('NA' %in% names(df.fill)){
+      df.fill <- df.fill %>% # down fill data until students change location
       select(-c('NA'))
+    }
     df.fill[is.na(df.fill)] <- 'StudentExit' # fill empty locations with StudentExit
     
     cols.students <- colnames(df.fill)[2:ncol(df.fill)]
