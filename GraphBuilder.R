@@ -8,7 +8,8 @@ library(docstring)
 
 
 boris.to.adjacency <- function(file1, nvid1, offset1 = 0, file2 = NULL, nvid2 = NULL, 
-                         offset2 = 0, method = 1, filename = 'adjacencyMatrix.csv'){
+                         offset2 = 0, method = 1, ignore.begin = FALSE,
+                         filename = 'adjacencyMatrix.csv'){
 #' Create a graph
 #' 
 #' Create graph object from up to two BORIS files using the SCAN/SKIP methods
@@ -22,6 +23,7 @@ boris.to.adjacency <- function(file1, nvid1, offset1 = 0, file2 = NULL, nvid2 = 
 #' @param offset2 Manual offset to apply to file2 times --- to be used only if offset not 
 #' applied in BORIS
 #' @param method Either 1 or 2 (will be updated to Scan/Skip in a future version)
+#' @param ignore.begin binary, whether to only include interactions after class start
 #' @param filename filename and path of exported adjacency matrix
 #' 
 #' returns a graph object
@@ -35,6 +37,7 @@ boris.to.adjacency <- function(file1, nvid1, offset1 = 0, file2 = NULL, nvid2 = 
     df.2$Time <- df.2$Time + offset2
     
     df <- rbind(df.1, df.2)
+    print(df)
   } else {
     df <- read.csv(file1, skip = nvid1 + 14, stringsAsFactors = FALSE)
     df$Time <- df$Time + offset1
@@ -46,13 +49,22 @@ boris.to.adjacency <- function(file1, nvid1, offset1 = 0, file2 = NULL, nvid2 = 
       rowwise() %>%
       mutate(Subject = strsplit(Subject, '-')[[1]][1]) # extract labels before hyphens
     
+    df[df$Behavior == 'StartClass', 'Subject'] <- NA
+    df <- df[!duplicated(df$Behavior) | (df$Behavior != 'StartClass'),]
+    if(!ignore.begin){
+      StartTime <- df[df$Behavior == 'StartClass', 'Time']
+      df[df$Time < StartTime, 'Time'] <- StartTime
+    }
+    
     # dcast so we have location of each student at each timestamp in the data
     df.dcast <- dcast(df, Time ~ Subject, value.var = 'Behavior')
-    df.fill <- fill(df.dcast, -Time) 
-    if('NA' %in% names(df.fill)){
-      df.fill <- df.fill %>% # down fill data until students change location
-      select(-c('NA'))
+    if('NA' %in% names(df.dcast)){ # remove NA subjects if they exist
+      df.dcast <- df.dcast %>% 
+        select(-c('NA'))
     }
+    
+    df.fill <- fill(df.dcast, -Time) # down fill data until students change location
+
     df.fill[is.na(df.fill)] <- 'StudentExit' # fill empty locations with StudentExit
     
     cols.students <- colnames(df.fill)[2:ncol(df.fill)]
