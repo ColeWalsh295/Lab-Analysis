@@ -51,7 +51,7 @@ boris.to.adjacency <- function(file1, nvid1, offset1 = 0, file2 = NULL, nvid2 = 
     
     df[df$Behavior == 'StartClass', 'Subject'] <- NA
     df <- df[!duplicated(df$Behavior) | (df$Behavior != 'StartClass'),]
-    if(!ignore.begin){
+    if(ignore.begin){
       StartTime <- df[df$Behavior == 'StartClass', 'Time']
       df[df$Time < StartTime, 'Time'] <- StartTime
     }
