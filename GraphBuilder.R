@@ -194,7 +194,7 @@ graph.from.adjacency <- function(file, method, name = ''){
 #' Creates a graph object from an adjacency matrix
 #' 
 #' @param file adjacency matrix in csv format
-#' @param method the method used to produce BORIS files, either scan or skip
+#' @param method the method used to produce BORIS files, either scan, skip, or TA
 #' @param name optional parameter for title of graph
 #' 
 #' returns a graph object
@@ -202,11 +202,20 @@ graph.from.adjacency <- function(file, method, name = ''){
   matrix <- read.csv(file, header = TRUE, row.names = 1, check.names = FALSE, 
                      na.strings = "")
   matrix[is.na(matrix)] <- 0
-  g <- graph_from_adjacency_matrix(as.matrix(matrix), mode = "undirected", 
-                                   weighted = ifelse(method == 'scan', 'time', 'count'))
+  
+  if(method != 'TA'){
+    g <- graph_from_adjacency_matrix(as.matrix(matrix), mode = "undirected", 
+                                     weighted = ifelse(method == 'scan', 'time', 'count'))
+    V(g)$group <- substr(V(g)$name, 1, 1)
+    E(g)$group <- ifelse(substr(ends(g, E(g))[, 1], 1, 1) == substr(ends(g, E(g))[, 2], 1, 
+                                                                    1), 'within', 'between')
+  } else {
+    g <- graph_from_adjacency_matrix(as.matrix(matrix), mode = "directed", 
+                                     weighted = 'interaction')
+  }
+  
   g <- add.graph.attributes(g, name = name, method = method)
-  E(g)$group <- ifelse(substr(ends(g, E(g))[, 1], 1, 1) == substr(ends(g, E(g))[, 2], 1, 
-                                                                  1), 'within', 'between')
+  
   return(g)
 }
 
@@ -217,29 +226,29 @@ add.graph.attributes <- function(g, name, method){
 #' 
 #' @param g graph object
 #' @param name title of graph
-#' @param method method used to produce BORIS files
+#' @param method method used to produce BORIS files, either scan, skip, or TA
 #' 
 #' returns a graph object
   
-  E(g)$group <- ifelse(substr(ends(g, E(g))[, 1], 1, 1) == substr(ends(g, E(g))[, 2], 1, 
-                                                                  1), 'within', 'between')
+  E(g)$color <- adjustcolor('black', 0.5)
+  
+  V(g)$centr.deg <- centralization.degree(g)$res
   
   if(method == 'scan'){
     E(g)$time <- E(g)$time/60 # put time in units of minutes
     E(g)$weight <- E(g)$time/max(E(g)$time) * 5
     E(g)$line.type <- 2 * (E(g)$group == 'within') + 1
-  } else {
+    V(g)$size <- (V(g)$centr.deg + 1)/max(V(g)$centr.deg) * 15
+  } else if(method == 'skip') {
     E(g)$weight <- E(g)$count/max(E(g)$count) * 5
     E(g)$line.type <- 1
+    V(g)$size <- (V(g)$centr.deg + 1)/max(V(g)$centr.deg) * 15
+  } else {
+    E(g)$weight <- E(g)$interaction/max(E(g)$interaction) * 5
+    E(g)$line.type <- 1
+    # normalize against max non-TA node
+    V(g)$size <- (V(g)$centr.deg + 1)/max(V(g)$centr.deg[2:length(V(g))]) * 15
   }
-  
-  E(g)$color <- adjustcolor('black', 0.5)
-  
-  V(g)$group <- substr(V(g)$name, 1, 1)
-  
-  V(g)$centr.deg <- centralization.degree(g)$res
-  
-  V(g)$size <- (V(g)$centr.deg + 1)/max(V(g)$centr.deg) * 15
   
   g$name <- name
   
@@ -247,22 +256,34 @@ add.graph.attributes <- function(g, name, method){
   
 }
 
-plot.graph <- function(g){
+plot.graph <- function(g, method){
 #' Plot a graph
 #' 
 #' Plots a SNA graph with specified attributes
 #' 
 #' @param g graph object
+#' @param method method used to generate BORIS files, either scan, skip, or TA
 #' 
 #' returns a plot object
 #' 
   pal <- brewer.pal(length(unique(V(g)$group)), "Set1")
   par(mar = c(0, 0, 0, 0))
-  g$palette <- categorical_pal(max(V(g)$group))
-  V(g)$color <- V(g)$group
   
-  plot(g, edge.width = E(g)$weight, edge.color = E(g)$color, vertex.size = V(g)$size, 
-       layout = layout_with_gem(g), edge.curved = 0.2, vertex.label = NA, 
-       edge.lty = E(g)$line.type)
+  if(method != 'TA'){
+    g$palette <- categorical_pal(max(V(g)$group))
+    V(g)$color <- V(g)$group
+    
+    plot(g, edge.width = E(g)$weight, edge.color = E(g)$color, vertex.size = V(g)$size, 
+         layout = layout_with_gem(g), edge.curved = 0.2, vertex.label = NA, 
+         edge.lty = E(g)$line.type)
+  } else {
+    g$palette <- categorical_pal(2)
+    V(g)$color <- ifelse(V(g)$name == 'TA', 1, 2)
+    V(g)$size[1] <- max(V(g)$size[2:length(V(g))])
+    
+    plot(g, edge.width = E(g)$weight, edge.color = E(g)$color, vertex.size = V(g)$size, 
+         layout = layout_with_gem(g), edge.curved = 0.2, edge.lty = E(g)$line.type)
+  }
+
   title(g$name, line = -20, adj = 0.1)
 }

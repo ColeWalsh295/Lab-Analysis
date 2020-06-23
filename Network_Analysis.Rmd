@@ -17,13 +17,18 @@ theme_set(theme_classic(base_size = 10))
 
 # Define function for later analyses
 ```{r}
-density.calc <- function(g, method = 1){
+density.calc <- function(g, method){
   
   d <- edge_density(g) # calculate unweighted density of graph
   # calculate weighted density using edge weights (either time or count depending on 
   # method used in video coding)
-  dw <- ifelse(method == 1, edge_density(g) * sum(E(g)$time) / length(E(g)), 
-               edge_density(g) * sum(E(g)$count) / length(E(g)))
+  if(method == 'scan'){
+    dw <- edge_density(g) * sum(E(g)$time) / length(E(g))
+  } else if(method == 'skip'){
+    dw <- edge_density(g) * sum(E(g)$count) / length(E(g))
+  } else {
+    dw <- edge_density(g) * sum(E(g)$interaction) / length(E(g))
+  }
   
   return(c(d, dw))
 }
@@ -70,12 +75,14 @@ df.create <- function(list.of.graphs, session = NA, lab = NA, week = NA, method 
   return(df)
 }
 
-reliability <- function(g1, g2, method = 1, normalize = FALSE){
+reliability <- function(g1, g2, method, normalize = FALSE){
   hd <- nd.hamming(list(as_adjacency_matrix(g1), as_adjacency_matrix(g2)))$`D`[1]
-  if(method == 1){
-    weight = 'time'
+  if(method == 'scan'){
+    weight <- 'time'
+  } else if(method == 'skip'){
+    weight <- 'count'
   } else {
-    weight = 'count'
+    weight <- 'interaction'
   }
   hd.w <- nd.hamming(list(as_adjacency_matrix(g1, attr = weight), 
                           as_adjacency_matrix(g2, attr = weight)))$D[1]
@@ -83,9 +90,14 @@ reliability <- function(g1, g2, method = 1, normalize = FALSE){
   if(normalize){
     max.matrix <- pmax(as_adjacency_matrix(g1, attr = weight),
                        as_adjacency_matrix(g2, attr = weight))
-    
-    d <- density.calc(graph_from_adjacency_matrix(max.matrix, mode = 'undirected', 
-                                                  weighted = weight), method = method)
+    if(method != 'TA'){
+      d <- density.calc(graph_from_adjacency_matrix(max.matrix, mode = 'undirected', 
+                                                    weighted = weight), method = method)
+    } else {
+      d <- density.calc(graph_from_adjacency_matrix(max.matrix, mode = 'directed', 
+                                                    weighted = weight), method = method)
+    }
+
     hd <- 1 - hd/d[1]
     hd.w <- 1 - hd.w/d[2]
   }
@@ -99,38 +111,40 @@ reliability <- function(g1, g2, method = 1, normalize = FALSE){
 g.scan.9.11 <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1112_Fall2019/Scan_Method/Scan_9_11_CW.csv', 
                                     method = 'scan', name = '9-11 Scan')
 
-plot.graph(g.scan.9.11)
+plot.graph(g.scan.9.11, 'scan')
 
 g.scan.9.18 <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1112_Fall2019/Scan_Method/Scan_9_18_CW.csv', 
                                     method = 'scan', name = '9-18 Scan')
-plot.graph(g.scan.9.18)
+plot.graph(g.scan.9.18, 'scan')
 
 g.scan.9.25 <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1112_Fall2019/Scan_Method/Scan_9_25_CW.csv', 
                                     method = 'scan', name = '9-25 Scan')
-plot.graph(g.scan.9.25)
+plot.graph(g.scan.9.25, 'scan')
 ```
 
 ## Monday section
 ```{r}
 g.scan.9.16 <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1112_Fall2019/Scan_Method/Scan_9_16_DK.csv', 
                                     method = 'scan', name = '9-16 Scan')
-plot.graph(g.scan.9.16)
+plot.graph(g.scan.9.16, 'scan')
 
 g.scan.9.30 <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1112_Fall2019/Scan_Method/Scan_9_30_DK.csv', 
                                     method = 'scan', name = '9-30 Scan')
-plot.graph(g.scan.9.30)
+plot.graph(g.scan.9.30, 'scan')
 
 g.scan.10.7 <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1112_Fall2019/Scan_Method/Scan_10_7_DK.csv', 
                                     method = 'scan', name = '10-7 Scan')
-plot.graph(g.scan.10.7)
+plot.graph(g.scan.10.7, 'scan')
 
 g.scan.10.21 <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1112_Fall2019/Scan_Method/Scan_10_21_DK.csv', 
                                     method = 'scan', name = '10-21 Scan')
-plot.graph(g.scan.10.21)
+plot.graph(g.scan.10.21, 'scan')
 
 g.scan.10.28 <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1112_Fall2019/Scan_Method/Scan_10_28_DK.csv', 
                                     method = 'scan', name = '10-28 Scan')
-plot.graph(g.scan.10.28)
+g.scan.10.28 <- subgraph(g.scan.10.28, 1:(length(V(g.scan.10.28)) - 1))
+
+plot.graph(g.scan.10.28, 'scan')
 ```
 
 
@@ -139,7 +153,7 @@ plot.graph(g.scan.10.28)
 ```{r}
 g.skip.9.11 <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1112_Fall2019/Skip_Method/Skip_9_11_DK.csv', 
                                     method = 'skip', name = '9-11 Skip')
-plot.graph(g.skip.9.11)
+plot.graph(g.skip.9.11, 'skip')
 
 g.skip.9.18 <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1112_Fall2019/Skip_Method/Skip_9_18_DK.csv', 
                                     method = 'skip', name = '9-18 Skip')
@@ -147,15 +161,15 @@ g.skip.9.18 <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/Adj
 V(g.skip.9.18)$name <- c('1A', '1B', '2C', '2B', '2A', '3A', '3C', '3B', '4A', '4B', '4C',
                          '5A', '5B', '5C', '6A', '6B', '6C', '7A', '7B')
 
-plot.graph(g.skip.9.18)
+plot.graph(g.skip.9.18, 'skip')
 
 g.skip.9.25 <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1112_Fall2019/Skip_Method/Skip_9_25_CW.csv', 
                                     method = 'skip', name = '9-25 Skip')
-plot.graph(g.skip.9.25)
+plot.graph(g.skip.9.25, 'skip')
 
 g.skip.10.9 <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1112_Fall2019/Skip_Method/Skip_10_9_DK.csv', 
                                     method = 'skip', name = '10-9 Skip')
-plot.graph(g.skip.10.9)
+plot.graph(g.skip.10.9, 'skip')
 ```
 
 # Check interrater reliability for 9-18
@@ -166,29 +180,29 @@ g.scan.9.18.MS <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/
 V(g.scan.9.18.MS)$name <- c('1A', '1B', '2A', '2B', '2C', '3A', '3B', '3C', '4A', '4B', '4C', '5A', '5B', '5C', '6B', '6A', '6C', '7A', '7B')
 
 print('Reliability of scan method between CW and DK for 9-18...')
-reliability(g.scan.9.18, g.scan.9.18.DK)
-reliability(g.scan.9.18, g.scan.9.18.DK, normalize = TRUE)
+reliability(g.scan.9.18, g.scan.9.18.DK, method = 'scan')
+reliability(g.scan.9.18, g.scan.9.18.DK, method = 'scan', normalize = TRUE)
 
 print('Reliability of scan method between CW and MS for 9-18...')
 # reliability(g.scan.9.18, g.scan.9.18.MS)
 reliability(g.scan.9.18, igraph::permute(g.scan.9.18.MS,
                                          match(V(g.scan.9.18.MS)$name,
-                                               V(g.scan.9.18)$name)), method = 1)
+                                               V(g.scan.9.18)$name)), method = 'scan')
 # reliability(g.scan.9.18, g.scan.9.18.MS, normalize = TRUE)
 reliability(g.scan.9.18, igraph::permute(g.scan.9.18.MS, 
                                          match(V(g.scan.9.18.MS)$name,
-                                               V(g.scan.9.18)$name)), method = 1,
+                                               V(g.scan.9.18)$name)), method = 'scan',
             normalize = TRUE)
 
 print('Reliability of scan method between DK and MS for 9-18...')
 # reliability(g.scan.9.18.DK, g.scan.9.18.MS)
 reliability(g.scan.9.18.DK, igraph::permute(g.scan.9.18.MS,
                                          match(V(g.scan.9.18.MS)$name,
-                                               V(g.scan.9.18.DK)$name)), method = 1)
+                                               V(g.scan.9.18.DK)$name)), method = 'scan')
 # reliability(g.scan.9.18.DK, g.scan.9.18.MS, normalize = TRUE)
 reliability(g.scan.9.18.DK, igraph::permute(g.scan.9.18.MS,
                                          match(V(g.scan.9.18.MS)$name,
-                                               V(g.scan.9.18.DK)$name)), method = 1,
+                                               V(g.scan.9.18.DK)$name)), method = 'scan',
             normalize = TRUE)
 
 g.skip.9.18.CW <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1112_Fall2019/Skip_Method/Skip_9_18_CW.csv', 
@@ -197,11 +211,34 @@ g.skip.9.18.CW <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/
 print('Reliability of skip method between CW and DK for 9-18...')
 reliability(g.skip.9.18, igraph::permute(g.skip.9.18.CW,
                                          match(V(g.skip.9.18.CW)$name,
-                                               V(g.skip.9.18)$name)), method = 2)
+                                               V(g.skip.9.18)$name)), method = 'skip')
 reliability(g.skip.9.18, igraph::permute(g.skip.9.18.CW, 
                                          match(V(g.skip.9.18.CW)$name,
-                                               V(g.skip.9.18)$name)), method = 2,
+                                               V(g.skip.9.18)$name)), method = 'skip',
             normalize = TRUE)
+```
+
+# Check interrater reliability for TA graphs
+```{r, warning = FALSE, message = FALSE}
+g.TA.9.18.Dur.DK <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1112_Fall2019/TA_Method/TA_9_18_Dur_DK.csv', 
+                                         method = 'TA')
+
+g.TA.9.18.Dur.DW <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1112_Fall2019/TA_Method/TA_9_18_Dur_DW.csv', 
+                                         method = 'TA')
+plot.graph(g.TA.9.18.Dur.DW, 'TA')
+
+reliability(g.TA.9.18.Dur.DK, g.TA.9.18.Dur.DW, method = 'TA')
+reliability(g.TA.9.18.Dur.DK, g.TA.9.18.Dur.DW, method = 'TA', normalize = TRUE)
+
+g.TA.9.18.No.DK <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1112_Fall2019/TA_Method/TA_9_18_No_DK.csv', 
+                                         method = 'TA')
+
+g.TA.9.18.No.DW <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1112_Fall2019/TA_Method/TA_9_18_No_DW.csv', 
+                                         method = 'TA')
+plot.graph(g.TA.9.18.No.DW, 'TA')
+
+reliability(g.TA.9.18.No.DK, g.TA.9.18.No.DW, method = 'TA')
+reliability(g.TA.9.18.No.DK, g.TA.9.18.No.DW, method = 'TA', normalize = TRUE)
 ```
 
 # Analyze evolution of density over time
@@ -219,12 +256,12 @@ scan.graphs.monday <- list(g.scan.9.16, g.scan.9.30, g.scan.10.7, g.scan.10.21,
                            g.scan.10.28)
 
 df.density <- rbind(df.create(scan.graphs.wednesday, session = 'Wednesday', 
-                              lab = c(1, 1, 2),  week = c(1, 2, 1), method = 1), 
+                              lab = c(1, 1, 2),  week = c(1, 2, 1), method = 'scan'), 
                     df.create(skip.graphs.wednesday, session = 'Wednesday', 
-                              lab = c(1, 1, 2, 2), week = c(1, 2, 1, 2), method = 2),
+                              lab = c(1, 1, 2, 2), week = c(1, 2, 1, 2), method = 'skip'),
                     df.create(scan.graphs.monday, session = 'Monday', 
                               lab = c(1, 2, 2, 3, 3), week = c(1, 1, 2, 1, 2), 
-                              method = 1)) %>%
+                              method = 'scan')) %>%
   mutate(lab.week = paste('L', lab, 'W', week, sep = ''),
          method.session = paste('M', method, 'L', session)) %>%
   melt(., measure.vars = c('density', 'density.weighted'))
@@ -242,7 +279,7 @@ plot.unweight <- ggplot(df.density %>%
 
 plot.weight <- ggplot(df.density %>%
                         filter(variable == 'density.weighted') %>%
-                        mutate(method = ifelse(method == 1, 'one', 'two')), 
+                        mutate(method = ifelse(method == 'scan', 'one', 'two')), 
                       aes(x = as.factor(lab.week), y = value, group = method.session, 
                           color = as.factor(method)), shape = as.factor(session)) +
   geom_point(size = 4, aes(shape = session)) +
