@@ -1,3 +1,4 @@
+library(data.table)
 library(dplyr)
 library(reshape2)
 library(tidyr)
@@ -8,7 +9,8 @@ library(docstring)
 
 
 boris.to.adjacency <- function(file1, nvid1, offset1 = 0, file2 = NULL, nvid2 = NULL, 
-                         offset2 = 0, method = 1, ignore.begin = FALSE,
+                         offset2 = 0, method = 'scan', ignore.begin = FALSE, 
+                         group.level = FALSE, TA.adjacency = NULL, 
                          filename = 'adjacencyMatrix.csv'){
 #' Create a graph
 #' 
@@ -22,8 +24,10 @@ boris.to.adjacency <- function(file1, nvid1, offset1 = 0, file2 = NULL, nvid2 = 
 #' @param nvid2 Number of videos used in second BORIS file
 #' @param offset2 Manual offset to apply to file2 times --- to be used only if offset not 
 #' applied in BORIS
-#' @param method Either 1 or 2 (will be updated to Scan/Skip in a future version)
+#' @param method Either scan or skip
 #' @param ignore.begin binary, whether to only include interactions after class start
+#' @param group.level binary, whether to collapse interactions to the group level
+#' @param TA.adjacency file name of TA method adjacency matrix to merge with at group level
 #' @param filename filename and path of exported adjacency matrix
 #' 
 #' returns a graph object
@@ -37,14 +41,13 @@ boris.to.adjacency <- function(file1, nvid1, offset1 = 0, file2 = NULL, nvid2 = 
     df.2$Time <- df.2$Time + offset2
     
     df <- rbind(df.1, df.2)
-    print(df)
   } else {
     df <- read.csv(file1, skip = nvid1 + 14, stringsAsFactors = FALSE)
     df$Time <- df$Time + offset1
   }
   
   # Extract only time, subject, and behaviour information
-  if(method == 1){
+  if(method == 'scan'){
     df <- df[, c('Time', 'Subject', 'Behavior')] %>%
       rowwise() %>%
       mutate(Subject = strsplit(Subject, '-')[[1]][1]) # extract labels before hyphens
@@ -67,51 +70,95 @@ boris.to.adjacency <- function(file1, nvid1, offset1 = 0, file2 = NULL, nvid2 = 
 
     df.fill[is.na(df.fill)] <- 'StudentExit' # fill empty locations with StudentExit
     
-    cols.students <- colnames(df.fill)[2:ncol(df.fill)]
-    
-    cols.comb <- unlist(lapply(combn(cols.students, 2, simplify = FALSE), paste, 
-                               collapse = ':')) # get every pair of possible students
+    if(group.level){
+      # get all pairs of directed table to table interactions possible
+      tables <- unique(df$Behavior)[unique(df$Behavior) %like% 'Table']
+      interactions.vec <- c(unlist(lapply(combn(tables, 2, simplify = FALSE), paste, 
+                                          collapse = ':')), 
+                            unlist(lapply(combn(rev(tables), 2, simplify = FALSE), 
+                                          paste, collapse = ':'))) 
+    } else {
+      students <- colnames(df.fill)[2:ncol(df.fill)]
+      interactions.vec <- unlist(lapply(combn(students, 2, simplify = FALSE), paste, 
+                                        collapse = ':')) # get every pair of possible students
+    }
     
     # create empty vector of interaction times for all pairs of students
-    times.vec <- rep(0, length(cols.comb))
-    names(times.vec) <- cols.comb
+    times.vec <- rep(0, length(interactions.vec))
+    names(times.vec) <- interactions.vec
     
     # aggregate times for all student-student interactions
     for (row in 1:(nrow(df.fill) - 1)){
-      for (col1 in 1:(ncol(df.fill) - 1)){
-        for (col2 in (col1 + 1):ncol(df.fill)){
-          if((df.fill[row, col1] == df.fill[row, col2]) & 
-             (df.fill[row, col1] != 'StudentExit')){
-            times.vec[paste(cols.students[col1 - 1], cols.students[col2 - 1], 
-                            sep = ':')] <- times.vec[paste(cols.students[col1 - 1], 
-                                                           cols.students[col2 - 1], 
-                                                           sep = ':')] + 
-              df.fill[(row + 1),  'Time'] - df.fill[row, 'Time']
+      if(group.level){
+        for (subject in tables){
+          for (location in tables){
+            if(location %in% df.fill[row, names(df.fill) %like% substr(subject, 
+                                                                       nchar(subject), 
+                                                                       nchar(subject)) | 
+                                     names(df.fill) == 'Time']){
+              times.vec[paste(subject, location, 
+                              sep = ':')] <- times.vec[paste(subject, location, 
+                                                             sep = ':')] +
+                df.fill[(row + 1),  'Time'] - df.fill[row, 'Time']
+              
+            }
+          }
+        }
+      } else {
+        for (col1 in 1:(ncol(df.fill) - 1)){
+          for (col2 in (col1 + 1):ncol(df.fill)){
+            if((df.fill[row, col1] == df.fill[row, col2]) & 
+               (df.fill[row, col1] != 'StudentExit')){
+              times.vec[paste(cols.students[col1 - 1], cols.students[col2 - 1], 
+                              sep = ':')] <- times.vec[paste(cols.students[col1 - 1], 
+                                                             cols.students[col2 - 1], 
+                                                             sep = ':')] + 
+                df.fill[(row + 1),  'Time'] - df.fill[row, 'Time']
+            }
           }
         }
       }
     }
     
-    # construct dataframe of student-student interactions
+    # construct dataframe of interactions
     df.times <- data.frame(times.vec)
-    df.times$Students <- row.names(df.times)
+    df.times$Subjects <- row.names(df.times)
     row.names(df.times) <- c()
     df.times <- df.times %>%
       rowwise() %>%
-      mutate(Student1 = strsplit(Students, ':')[[1]][1],
-             Student2 = strsplit(Students, ':')[[1]][2],
+      mutate(Subject1 = strsplit(Subjects, ':')[[1]][1],
+             Subject2 = strsplit(Subjects, ':')[[1]][2],
              Time = round(times.vec)) %>%
-      select(-c('Students', 'times.vec')) %>%
+      select(-c('Subjects', 'times.vec')) %>%
       filter(Time > 0)
     
-    # Set within group times to one second
-    g <- graph_from_data_frame(df.times, directed = FALSE)
+    g <- graph_from_data_frame(df.times, directed = TRUE)
+    E(g)$time <- df.times$Time
     
-    E(g)$group <- ifelse(substr(ends(g, E(g))[, 1], 1, 1) == substr(ends(g, E(g))[, 2], 1, 
-                                                                    1), 'within', 'between')
-    E(g)$time <- df.times$Time 
-    E(g)[E(g)$group == 'within']$time <- 1
-  } else { # for method 2, we used the comment information as well
+    if(!is.null(TA.adjacency)){
+      matrix <- read.csv(TA.adjacency, header = TRUE, row.names = 1, check.names = FALSE, 
+                         na.strings = "")
+      matrix[is.na(matrix)] <- 0
+      
+      g.TA <- graph_from_adjacency_matrix(as.matrix(matrix), mode = "directed", 
+                                       weighted = 'time')
+      g <- union(g, g.TA)
+      E(g)$time_1[is.na(E(g)$time_1)] <- 0
+      E(g)$time_2[is.na(E(g)$time_2)] <- 0
+      E(g)$time <- E(g)$time_1 + E(g)$time_2
+      g <- delete_edge_attr(g, 'time_1')
+      g <- delete_edge_attr(g, 'time_2')
+    }
+    
+    if(!group.level){
+      # Set within group times to one second
+      g <- graph_from_data_frame(df.times, directed = FALSE)
+      
+      E(g)$group <- ifelse(substr(ends(g, E(g))[, 1], 1, 1) == substr(ends(g, E(g))[, 2], 1, 
+                                                                      1), 'within', 'between')
+      E(g)[E(g)$group == 'within']$time <- 1
+    }
+  } else { # for skip method, we used the comment information as well
     df <- df[, c('Time', 'Subject', 'Behavior', 'Comment')] %>%
       rowwise() %>%
       mutate(Subject = strsplit(Subject, '-')[[1]][1], # extract only labels before hyphens
@@ -180,7 +227,7 @@ boris.to.adjacency <- function(file1, nvid1, offset1 = 0, file2 = NULL, nvid2 = 
   
   # g <- add.graph.attributes(g, name = name)
   g <- igraph::permute(g, match(V(g)$name, sort(V(g)$name)))
-  a <- as_adjacency_matrix(g, attr = ifelse(method == 1, 'time', 'count'), type = 'both',
+  a <- as_adjacency_matrix(g, attr = ifelse(method == 'scan', 'time', 'count'), type = 'both',
                            sparse = FALSE)
   a[a == 0] <- ''
   write.csv(a, filename)
@@ -244,7 +291,7 @@ add.graph.attributes <- function(g, name, method){
     E(g)$line.type <- 1
     V(g)$size <- (V(g)$centr.deg + 1)/max(V(g)$centr.deg) * 15
   } else {
-    E(g)$weight <- E(g)$interaction/max(E(g)$interaction) * 5
+    E(g)$weight <- E(g)$time/max(E(g)$time) * 5
     E(g)$line.type <- 1
     # normalize against max non-TA node
     V(g)$size <- (V(g)$centr.deg + 1)/max(V(g)$centr.deg[2:length(V(g))]) * 15

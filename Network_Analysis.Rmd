@@ -15,6 +15,34 @@ library(docstring)
 theme_set(theme_classic(base_size = 10))
 ```
 
+```{r}
+g <- boris.to.adjacency(file1 = 'C:/Users/Cole/Box Sync/Network analysis/Exported_Data/P1112_Fall2019/Scan_Method/Scan_9_11_cam1_CW.csv', 
+                        nvid1 = 3, 
+                        file2 = 'C:/Users/Cole/Box Sync/Network analysis/Exported_Data/P1112_Fall2019/Scan_Method/Scan_9_11_cam2_CW.csv', 
+                        nvid2 = 6, group.level = TRUE, 
+                        TA.adjacency = 'C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1112_Fall2019/TA_Method/Un_normalized/TA_9_11_Dur_DW.csv', 
+                        filename = 'C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1112_Fall2019/ScanTA_GroupLevel/Group_9_11.csv')
+
+g <- boris.to.adjacency(file1 = 'C:/Users/Cole/Box Sync/Network analysis/Exported_Data/P1112_Fall2019/Scan_Method/Scan_9_18_cam1_CW.csv', 
+                        nvid1 = 5, 
+                        file2 = 'C:/Users/Cole/Box Sync/Network analysis/Exported_Data/P1112_Fall2019/Scan_Method/Scan_9_18_cam2_CW.csv', 
+                        nvid2 = 7, group.level = TRUE, 
+                        TA.adjacency = 'C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1112_Fall2019/TA_Method/Un_normalized/TA_9_18_Dur_DW.csv', 
+                        filename = 'C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1112_Fall2019/ScanTA_GroupLevel/Group_9_18.csv')
+
+g <- boris.to.adjacency('C:/Users/Cole/Box Sync/Network analysis/Exported_Data/P1112_Fall2019/Scan_Method/Scan_9_25_cam_CW.csv', 
+                        nvid1 = 1, group.level = TRUE, 
+                        TA.adjacency = 'C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1112_Fall2019/TA_Method/Un_normalized/TA_9_25_Dur_DW.csv', 
+                        filename = 'C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1112_Fall2019/ScanTA_GroupLevel/Group_9_25.csv')
+
+g <- boris.to.adjacency('C:/Users/Cole/Box Sync/Network analysis/Exported_Data/P1112_Fall2019/Scan_Method/Scan_10_23_all_MS.csv', 
+                        nvid1 = 9, group.level = TRUE, 
+                        TA.adjacency = 'C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1112_Fall2019/TA_Method/Un_normalized/TA_10_23_Dur_DW.csv', 
+                        filename = 'C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1112_Fall2019/ScanTA_GroupLevel/Group_10_23.csv')
+plot.graph(add.graph.attributes(g, '', 'TA'), 'TA')
+```
+
+
 # Define function for later analyses
 ```{r}
 density.calc <- function(g, method){
@@ -111,6 +139,7 @@ reliability <- function(g1, g2, method, normalize = FALSE){
 g.scan.9.11 <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1112_Fall2019/Scan_Method/Scan_9_11_CW.csv', 
                                     method = 'scan', name = '9-11 Scan')
 
+png()
 plot.graph(g.scan.9.11, 'scan')
 
 g.scan.9.18 <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1112_Fall2019/Scan_Method/Scan_9_18_CW.csv', 
@@ -120,6 +149,10 @@ plot.graph(g.scan.9.18, 'scan')
 g.scan.9.25 <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1112_Fall2019/Scan_Method/Scan_9_25_CW.csv', 
                                     method = 'scan', name = '9-25 Scan')
 plot.graph(g.scan.9.25, 'scan')
+
+g.scan.10.9 <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1112_Fall2019/Scan_Method/Scan_10_9_MS.csv', 
+                                    method = 'scan', name = '10-8 Scan')
+plot.graph(g.scan.10.9, 'scan')
 ```
 
 ## Monday section
@@ -250,18 +283,18 @@ get_legend<-function(myggplot){
   return(legend)
 }
 
-scan.graphs.wednesday <- list(g.scan.9.11, g.scan.9.18, g.scan.9.25)
+scan.graphs.wednesday <- list(g.scan.9.11, g.scan.9.18, g.scan.9.25, g.scan.10.9)
 skip.graphs.wednesday <- list(g.skip.9.11, g.skip.9.18, g.skip.9.25, g.skip.10.9)
 scan.graphs.monday <- list(g.scan.9.16, g.scan.9.30, g.scan.10.7, g.scan.10.21, 
                            g.scan.10.28)
 
 df.density <- rbind(df.create(scan.graphs.wednesday, session = 'Wednesday', 
-                              lab = c(1, 1, 2),  week = c(1, 2, 1), method = 'scan'), 
+                              lab = c(1, 1, 2, 2), week = c(1, 2, 1, 2), method = 'scan'),
                     df.create(skip.graphs.wednesday, session = 'Wednesday', 
-                              lab = c(1, 1, 2, 2), week = c(1, 2, 1, 2), method = 'skip'),
-                    df.create(scan.graphs.monday, session = 'Monday', 
-                              lab = c(1, 2, 2, 3, 3), week = c(1, 1, 2, 1, 2), 
-                              method = 'scan')) %>%
+                              lab = c(1, 1, 2, 2), week = c(1, 2, 1, 2), method = 'skip')) %>% #,
+                    #df.create(scan.graphs.monday, session = 'Monday', 
+                     #         lab = c(1, 2, 2, 3, 3), week = c(1, 1, 2, 1, 2), 
+                      #        method = 'scan')) %>%
   mutate(lab.week = paste('L', lab, 'W', week, sep = ''),
          method.session = paste('M', method, 'L', session)) %>%
   melt(., measure.vars = c('density', 'density.weighted'))
@@ -270,19 +303,23 @@ plot.unweight <- ggplot(df.density %>%
          filter(variable == 'density'), 
          aes(x = as.factor(lab.week), y = value, group = method.session, 
              color = as.factor(method))) +
-  geom_point(size = 4, aes(shape = session)) +
+  # geom_point(size = 4, aes(shape = session)) +
+  geom_point(size = 4) +
   geom_line(stat = 'identity', size = 1) +
   labs(x = 'Lab week', y = 'Unweighted Density') +
-  scale_color_manual(name = 'Method', values = c('#0072B2', '#E69F00')) +
+  scale_color_manual(name = 'Method', values = c('#0072B2', '#E69F00'), 
+                     labels = c('Scan', 'Skip')) +
   scale_shape_manual(name = 'Lab Number', values = c(16, 15)) +
-  theme(legend.position = "none")
+  #theme(legend.position = "none") +
+  scale_x_discrete(labels = c(1, 2, 3, 4))
 
 plot.weight <- ggplot(df.density %>%
                         filter(variable == 'density.weighted') %>%
                         mutate(method = ifelse(method == 'scan', 'one', 'two')), 
                       aes(x = as.factor(lab.week), y = value, group = method.session, 
-                          color = as.factor(method)), shape = as.factor(session)) +
-  geom_point(size = 4, aes(shape = session)) +
+                          color = as.factor(method))) + #, shape = as.factor(session)) +
+  # geom_point(size = 4, aes(shape = session)) +
+  geom_point(size = 4) +
   geom_line(stat = 'identity', size = 1) +
   facet_wrap(~method, scales = 'free', nrow = 2, strip.position = "left", 
                 labeller = as_labeller(c(one = "Weighted density (minutes)", 
@@ -296,7 +333,8 @@ plot.weight <- ggplot(df.density %>%
   strip.placement = "outside"
 ) +
   ylab(NULL) +
-  theme(legend.position = "bottom")
+  # theme(legend.position = "bottom") + 
+  scale_x_discrete(labels = c(1, 2, 3, 4))
 
 legend <- get_legend(plot.weight)
 plot.weight <- plot.weight + theme(legend.position = "none")
@@ -316,5 +354,13 @@ ggplot(df.vars, aes(x = lab.week, y = within.variance, group = method)) +
   geom_point(size = 4) +
   geom_line(stat = 'identity', size = 1) +
   labs(x = 'Lab session', y = 'Mean within-group variance')
+```
+
+# High res pics
+```{r}
+png("C:/Users/Cole/Documents/GRA_Summer2020/AAPT-PERC2020/highRes9-18-skip.png", 
+    units="px", res = 200)
+plot.graph(g.skip.9.18, 'skip')
+dev.off()
 ```
 
