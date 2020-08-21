@@ -1,0 +1,36 @@
+---
+output:
+  pdf_document: default
+  html_document: default
+---
+# Load necessary packages
+```{r, results = 'hide', message = FALSE, warning = FALSE}
+library(dplyr)
+library(MRCV) # multiple response analysis package
+```
+
+# Load, process, and analyze function
+```{r}
+LE.mrcv <- function(file, n.group.vars, n.codes, replicates){
+  # evaluate multiple marginal independecnce of lab epistemology items with group variable
+  df <- read.csv(file)
+
+  ind <- sapply(df, is.factor)
+  df[ind] <- lapply(df[ind], function(x) as.numeric(as.character(x)))
+  df[is.na(df)] <- 0
+
+  set.seed(11)
+  print(MI.test(df, I = n.group.vars, J = n.codes, B = replicates, plot.hist = TRUE, 
+                print.status = FALSE))
+}
+```
+
+# Lab Epistemology analysis
+```{r, message = FALSE, warning = FALSE}
+LE.mrcv('C:/Users/Cole/Documents/DATA/LabEpistemology_DATA/Q1.csv', n.group.vars = 1, 
+        n.codes = 7, replicates = 2000)
+LE.mrcv('C:/Users/Cole/Documents/DATA/LabEpistemology_DATA/Q3.csv', n.group.vars = 1, 
+        n.codes = 9, replicates = 2000)
+LE.mrcv('C:/Users/Cole/Documents/DATA/LabEpistemology_DATA/Q5.csv', n.group.vars = 1, 
+        n.codes = 7, replicates = 2000)
+```

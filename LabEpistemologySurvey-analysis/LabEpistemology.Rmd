@@ -1,0 +1,53 @@
+---
+output:
+  pdf_document: default
+  html_document: default
+---
+```{r, results = 'hide', message = FALSE, warning = FALSE}
+library(dplyr)
+library(taRifx)
+library(reshape2)
+library(igraph)
+```
+
+# Function for reading survey responses and building graph
+```{r}
+LE.items.plot <- function(file, scale = 1){
+  # read Lab Epistemology file with student responses and construct networks of student 
+  # responses
+  
+  df <- read.csv(file)
+  df$Student_ID <- 1:nrow(df)
+  # first column has intervention variable, which we don't need
+  df_bipartite <- melt(df[, c(2:ncol(df))], id = c('Student_ID')) %>%
+    filter(!is.na(value)) %>%
+    select(Student_ID, variable)
+  
+  colnames(df_bipartite) <- c('Student_ID', 'Item')
+  
+  graph_bipartite <- graph_from_data_frame(df_bipartite) 
+  V(graph_bipartite)$type <- V(graph_bipartite)$name %in% df_bipartite$Student_ID
+  
+  projected_graph <- bipartite_projection(graph_bipartite)
+  graph_items <- projected_graph$proj1
+  graph_students <- projected_graph$proj2
+  
+  Item_NStudents <- df_bipartite %>%
+    group_by(Item) %>%
+    summarize(N = n()) # get number of students that picked each item for vertex size
+  
+  V(graph_items)$size <- Item_NStudents$N / scale
+  
+  graph_items %>%
+    plot(vertex.size = unlist(V(.)$size), edge.width = E(.)$weight / scale)
+}
+```
+
+# Construct plots of student responses to three questions from the LES
+```{r}
+LE.items.plot('C:/Users/Cole/Documents/DATA/LabEpistemology_DATA/Q1.csv')
+LE.items.plot('C:/Users/Cole/Documents/DATA/LabEpistemology_DATA/Q3.csv')
+LE.items.plot('C:/Users/Cole/Documents/DATA/LabEpistemology_DATA/Q5.csv')
+```
+
+
