@@ -10,8 +10,8 @@ library(docstring)
 
 boris.to.adjacency <- function(file1, nvid1, offset1 = 0, file2 = NULL, nvid2 = NULL, 
                          offset2 = 0, method = 'scan', ignore.begin = FALSE, 
-                         group.level = FALSE, TA.adjacency = NULL, 
-                         filename = 'adjacencyMatrix.csv'){
+                         level = 'student', collapse.group = FALSE,  TA.adjacency = NULL,
+                         directed = FALSE, filename = 'adjacencyMatrix.csv'){
 #' Create a graph
 #' 
 #' Create graph object from up to two BORIS files using the SCAN/SKIP methods
@@ -26,14 +26,15 @@ boris.to.adjacency <- function(file1, nvid1, offset1 = 0, file2 = NULL, nvid2 = 
 #' applied in BORIS
 #' @param method Either scan or skip
 #' @param ignore.begin binary, whether to only include interactions after class start
-#' @param group.level binary, whether to collapse interactions to the group level
+#' @param level how codes were applied in BORIS: either 'student' or 'group'
+#' @param collapse.group binary, whether to collapse interactions to the group level from
+#' student level; only applies if level is 'student'
 #' @param TA.adjacency file name of TA method adjacency matrix to merge with at group level
+#' @param directed binary, whether to include direction of interactions
 #' @param filename filename and path of exported adjacency matrix
 #' 
 #' returns a graph object
 
-  
-  # Read data
   if(!is.null(file2)){
     df.1 <- read.csv(file1, skip = nvid1 + 14, stringsAsFactors = FALSE)
     df.1$Time <- df.1$Time + offset1
@@ -46,15 +47,14 @@ boris.to.adjacency <- function(file1, nvid1, offset1 = 0, file2 = NULL, nvid2 = 
     df$Time <- df$Time + offset1
   }
   
-  # Extract only time, subject, and behaviour information
   if(method == 'scan'){
     df <- df[, c('Time', 'Subject', 'Behavior')] %>%
       rowwise() %>%
       mutate(Subject = strsplit(Subject, '-')[[1]][1]) # extract labels before hyphens
     
-    df[df$Behavior == 'StartClass', 'Subject'] <- NA
+    df[df$Behavior == 'StartClass', 'Subject'] <- NA # sometimes there is a leftover subject here
     df <- df[!duplicated(df$Behavior) | (df$Behavior != 'StartClass'),]
-    if(ignore.begin){
+    if(ignore.begin){ # set everything before class start to the class start time, so we don't count it
       StartTime <- df[df$Behavior == 'StartClass', 'Time']
       df[df$Time < StartTime, 'Time'] <- StartTime
     }
@@ -65,36 +65,37 @@ boris.to.adjacency <- function(file1, nvid1, offset1 = 0, file2 = NULL, nvid2 = 
       df.dcast <- df.dcast %>% 
         select(-c('NA'))
     }
-    
     df.fill <- fill(df.dcast, -Time) # down fill data until students change location
-
     df.fill[is.na(df.fill)] <- 'StudentExit' # fill empty locations with StudentExit
     
-    if(group.level){
+    students <- colnames(df.fill)[2:ncol(df.fill)]
+    if(collapse.group){
       # get all pairs of directed table to table interactions possible
       tables <- unique(df$Behavior)[unique(df$Behavior) %like% 'Table']
       interactions.vec <- c(unlist(lapply(combn(tables, 2, simplify = FALSE), paste, 
                                           collapse = ':')), 
                             unlist(lapply(combn(rev(tables), 2, simplify = FALSE), 
-                                          paste, collapse = ':'))) 
-    } else {
-      students <- colnames(df.fill)[2:ncol(df.fill)]
-      interactions.vec <- unlist(lapply(combn(students, 2, simplify = FALSE), paste, 
-                                        collapse = ':')) # get every pair of possible students
+                                          paste, collapse = ':')))
+    } else { # all pairs of directed student interactions
+      interactions.vec <- c(unlist(lapply(combn(students, 2, simplify = FALSE), paste, 
+                                          collapse = ':')), 
+                            unlist(lapply(combn(rev(students), 2, simplify = FALSE), 
+                                          paste, collapse = ':')))
     }
-    
-    # create empty vector of interaction times for all pairs of students
+
+    # create empty vector of interaction times for all pairs of students/tables
     times.vec <- rep(0, length(interactions.vec))
     names(times.vec) <- interactions.vec
+    df.fill <- df.fill[, c(students, 'Time')]
+    print(df.fill)
+    print(students)
     
     # aggregate times for all student-student interactions
     for (row in 1:(nrow(df.fill) - 1)){
-      if(group.level){
+      if(collapse.group){
         for (subject in tables){
-          for (location in tables){
-            if(location %in% df.fill[row, names(df.fill) %like% substr(subject, 
-                                                                       nchar(subject), 
-                                                                       nchar(subject)) | 
+          for (location in tables){ # keep time column and columns with subject at location
+            if(location %in% df.fill[row, names(df.fill) %like% substr(subject, 6, 6) | 
                                      names(df.fill) == 'Time']){
               times.vec[paste(subject, location, 
                               sep = ':')] <- times.vec[paste(subject, location, 
@@ -105,15 +106,33 @@ boris.to.adjacency <- function(file1, nvid1, offset1 = 0, file2 = NULL, nvid2 = 
           }
         }
       } else {
-        for (col1 in 1:(ncol(df.fill) - 1)){
-          for (col2 in (col1 + 1):ncol(df.fill)){
-            if((df.fill[row, col1] == df.fill[row, col2]) & 
-               (df.fill[row, col1] != 'StudentExit')){
-              times.vec[paste(cols.students[col1 - 1], cols.students[col2 - 1], 
-                              sep = ':')] <- times.vec[paste(cols.students[col1 - 1], 
-                                                             cols.students[col2 - 1], 
-                                                             sep = ':')] + 
-                df.fill[(row + 1),  'Time'] - df.fill[row, 'Time']
+        for (student1 in 1:(length(students) - 1)){
+          for (student2 in (student1 + 1):length(students)){
+            if((df.fill[row, student1] == df.fill[row, student2]) & 
+               (df.fill[row, student1] != 'StudentExit')){
+              if(!directed){
+                times.vec[paste(students[student1], students[student2], 
+                                sep = ':')] <- times.vec[paste(students[student1], 
+                                                               students[student2], 
+                                                               sep = ':')] + 
+                  df.fill[(row + 1),  'Time'] - df.fill[row, 'Time']
+              } else if(students[student1] %like% substr(df.fill[row, student1], 
+                                                         6, 6)){
+                # check which table students are at...if it is not either student's table 
+                # we ignore the directed interaction
+                times.vec[paste(students[student2], students[student1], 
+                                sep = ':')] <- times.vec[paste(students[student2], 
+                                                               students[student1], 
+                                                               sep = ':')] + 
+                  df.fill[(row + 1),  'Time'] - df.fill[row, 'Time']
+              } else if(students[student2] %like% substr(df.fill[row, student2], 
+                                                         6, 6)){
+                times.vec[paste(students[student1], students[student2], 
+                                sep = ':')] <- times.vec[paste(students[student1], 
+                                                               students[student2], 
+                                                               sep = ':')] + 
+                  df.fill[(row + 1),  'Time'] - df.fill[row, 'Time']
+              }
             }
           }
         }
@@ -132,7 +151,7 @@ boris.to.adjacency <- function(file1, nvid1, offset1 = 0, file2 = NULL, nvid2 = 
       select(-c('Subjects', 'times.vec')) %>%
       filter(Time > 0)
     
-    g <- graph_from_data_frame(df.times, directed = TRUE)
+    g <- graph_from_data_frame(df.times, directed = directed)
     E(g)$time <- df.times$Time
     
     if(!is.null(TA.adjacency)){
@@ -150,10 +169,8 @@ boris.to.adjacency <- function(file1, nvid1, offset1 = 0, file2 = NULL, nvid2 = 
       g <- delete_edge_attr(g, 'time_2')
     }
     
-    if(!group.level){
+    if(!collapse.group){
       # Set within group times to one second
-      g <- graph_from_data_frame(df.times, directed = FALSE)
-      
       E(g)$group <- ifelse(substr(ends(g, E(g))[, 1], 1, 1) == substr(ends(g, E(g))[, 2], 1, 
                                                                       1), 'within', 'between')
       E(g)[E(g)$group == 'within']$time <- 1
