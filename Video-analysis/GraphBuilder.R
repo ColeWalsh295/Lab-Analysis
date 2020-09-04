@@ -301,6 +301,7 @@ graph.from.adjacency <- function(file, method, directed = FALSE, name = '',
     V(g)$strength.out <- strength(g, mode = 'out')
   }
   
+  g$name <- name
   return(g)
 }
 
