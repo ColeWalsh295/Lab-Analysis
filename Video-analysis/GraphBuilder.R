@@ -5,13 +5,15 @@ library(tidyr)
 library(igraph)
 library(gtools)
 library(RColorBrewer)
+library(zoo)
 library(docstring)
 
 
-boris.to.adjacency <- function(file1, nvid1, offset1 = 0, file2 = NULL, nvid2 = NULL, 
-                         offset2 = 0, method = 'scan', ignore.begin = FALSE, 
-                         level = 'student', collapse.group = FALSE,  TA.adjacency = NULL,
-                         directed = FALSE, filename = 'adjacencyMatrix.csv'){
+boris.to.adjacency <- function(file1, nvid1, offset1 = 0, file2 = NULL, 
+                               nvid2 = NULL, offset2 = 0, method = 'scan-student', 
+                               ignore.begin = FALSE, collapse.group = FALSE, 
+                               TA.adjacency = NULL, directed = FALSE, 
+                               filename = 'adjacencyMatrix.csv'){
 #' Create a graph
 #' 
 #' Create graph object from up to two BORIS files using the SCAN/SKIP methods
@@ -24,12 +26,12 @@ boris.to.adjacency <- function(file1, nvid1, offset1 = 0, file2 = NULL, nvid2 = 
 #' @param nvid2 Number of videos used in second BORIS file
 #' @param offset2 Manual offset to apply to file2 times --- to be used only if offset not 
 #' applied in BORIS
-#' @param method Either scan or skip
+#' @param method Either scan-student, scan-group, or skip
 #' @param ignore.begin binary, whether to only include interactions after class start
-#' @param level how codes were applied in BORIS: either 'student' or 'group'
-#' @param collapse.group binary, whether to collapse interactions to the group level from
-#' student level; only applies if level is 'student'
-#' @param TA.adjacency file name of TA method adjacency matrix to merge with at group level
+#' @param collapse.group binary, whether to collapse scan-student to scan-graph;
+#' only applies if method is scan-student
+#' @param TA.adjacency file name of TA method adjacency matrix to merge with at 
+#' group level; only applies if collapse.group is TRUE
 #' @param directed binary, whether to include direction of interactions
 #' @param filename filename and path of exported adjacency matrix
 #' 
@@ -47,17 +49,17 @@ boris.to.adjacency <- function(file1, nvid1, offset1 = 0, file2 = NULL, nvid2 = 
     df$Time <- df$Time + offset1
   }
   
-  if(method == 'scan'){
+  df[df$Behavior == 'StartClass', 'Subject'] <- NA # sometimes there is a leftover subject here
+  df <- df[!duplicated(df$Behavior) | (df$Behavior != 'StartClass'),]
+  if(ignore.begin){ # set everything before class start to the class start time, so we don't count it
+    StartTime <- df[df$Behavior == 'StartClass', 'Time']
+    df[df$Time < StartTime, 'Time'] <- StartTime
+  }
+  
+  if(method == 'scan-student'){
     df <- df[, c('Time', 'Subject', 'Behavior')] %>%
       rowwise() %>%
       mutate(Subject = strsplit(Subject, '-')[[1]][1]) # extract labels before hyphens
-    
-    df[df$Behavior == 'StartClass', 'Subject'] <- NA # sometimes there is a leftover subject here
-    df <- df[!duplicated(df$Behavior) | (df$Behavior != 'StartClass'),]
-    if(ignore.begin){ # set everything before class start to the class start time, so we don't count it
-      StartTime <- df[df$Behavior == 'StartClass', 'Time']
-      df[df$Time < StartTime, 'Time'] <- StartTime
-    }
     
     # dcast so we have location of each student at each timestamp in the data
     df.dcast <- dcast(df, Time ~ Subject, value.var = 'Behavior')
@@ -87,8 +89,6 @@ boris.to.adjacency <- function(file1, nvid1, offset1 = 0, file2 = NULL, nvid2 = 
     times.vec <- rep(0, length(interactions.vec))
     names(times.vec) <- interactions.vec
     df.fill <- df.fill[, c(students, 'Time')]
-    print(df.fill)
-    print(students)
     
     # aggregate times for all student-student interactions
     for (row in 1:(nrow(df.fill) - 1)){
@@ -175,6 +175,21 @@ boris.to.adjacency <- function(file1, nvid1, offset1 = 0, file2 = NULL, nvid2 = 
                                                                       1), 'within', 'between')
       E(g)[E(g)$group == 'within']$time <- 1
     }
+  } else if(method == 'scan-group'){
+    df <- df[, c('Time', 'Subject', 'Behavior', 'Status')] %>% # state events rather than point
+      rowwise() %>%
+      mutate(Behavior = strsplit(Behavior, '->')[[1]][2]) %>%
+      filter(Behavior != 'ClassStart')
+    
+    df <- df %>% group_by(Subject, Behavior) %>%
+      mutate(time.diff = rollapplyr(Time, width = 2, FUN = diff, partial = TRUE)) %>%
+      filter(Status == 'START') %>%
+      select(Subject, Behavior, time.diff) %>%
+      group_by(Subject, Behavior) %>%
+      summarize(time = sum(time.diff))
+    
+    g <- graph_from_data_frame(df, directed = directed)
+    E(g)$time <- df$time
   } else { # for skip method, we used the comment information as well
     df <- df[, c('Time', 'Subject', 'Behavior', 'Comment')] %>%
       rowwise() %>%
@@ -217,7 +232,7 @@ boris.to.adjacency <- function(file1, nvid1, offset1 = 0, file2 = NULL, nvid2 = 
       mutate(Behavior = paste(substr(Subject, 1, 1), Behavior, sep = ''))
     
     df <- rbind(df, df.table, df.other)
-    df$Interval <- round(df$Time/120)
+    df$Interval <- round(df$Time/120) # partition into 2min intervals
     df <- df[!duplicated(df[, c('Subject', 'Behavior', 'Interval')]),]
     df$ordered <- as.numeric(apply(asc(df$Subject), 2, paste, 
                                    collapse = '')) < as.numeric(apply(asc(df$Behavior), 2, 
@@ -231,20 +246,13 @@ boris.to.adjacency <- function(file1, nvid1, offset1 = 0, file2 = NULL, nvid2 = 
       group_by(Subject, Behavior) %>%
       summarize(N.ints = n())
     
-    g <- graph_from_data_frame(df.two.way, directed = FALSE)
-    
-    # E(g)$group <- ifelse(substr(ends(g, E(g))[, 1], 1, 1) == substr(ends(g, E(g))[, 2], 1, 
-    #                                                                 1), 'within', 'between')
-    # 
+    g <- graph_from_data_frame(df.two.way, directed = FALSE) # we did not keep track of direction using this method
     E(g)$count <- df.two.way$N.ints
-    # E(g)$weight <- E(g)$count/max(E(g)$count) * 5
-    # 
-    # E(g)$line.type <- 1
   }
   
   # g <- add.graph.attributes(g, name = name)
   g <- igraph::permute(g, match(V(g)$name, sort(V(g)$name)))
-  a <- as_adjacency_matrix(g, attr = ifelse(method == 'scan', 'time', 'count'), type = 'both',
+  a <- as_adjacency_matrix(g, attr = ifelse(method %like% 'scan', 'time', 'count'), type = 'both',
                            sparse = FALSE)
   a[a == 0] <- ''
   write.csv(a, filename)
@@ -252,13 +260,13 @@ boris.to.adjacency <- function(file1, nvid1, offset1 = 0, file2 = NULL, nvid2 = 
   
 }
 
-graph.from.adjacency <- function(file, method, name = ''){
+graph.from.adjacency <- function(file, method, directed = FALSE, name = ''){
 #' Create a graph
 #' 
 #' Creates a graph object from an adjacency matrix
 #' 
 #' @param file adjacency matrix in csv format
-#' @param method the method used to produce BORIS files, either scan, skip, or TA
+#' @param method Either scan-student, scan-group, or skip
 #' @param name optional parameter for title of graph
 #' 
 #' returns a graph object
@@ -266,16 +274,18 @@ graph.from.adjacency <- function(file, method, name = ''){
   matrix <- read.csv(file, header = TRUE, row.names = 1, check.names = FALSE, 
                      na.strings = "")
   matrix[is.na(matrix)] <- 0
+  g <- graph_from_adjacency_matrix(as.matrix(matrix), 
+                                   mode = ifelse(directed, "directed", "undirected"),
+                                   weighted = TRUE)
   
-  if(method != 'TA'){
-    g <- graph_from_adjacency_matrix(as.matrix(matrix), mode = "undirected", 
-                                     weighted = ifelse(method == 'scan', 'time', 'count'))
+  if(method != 'scan-group'){
     V(g)$group <- substr(V(g)$name, 1, 1)
-    E(g)$group <- ifelse(substr(ends(g, E(g))[, 1], 1, 1) == substr(ends(g, E(g))[, 2], 1, 
-                                                                    1), 'within', 'between')
-  } else {
-    g <- graph_from_adjacency_matrix(as.matrix(matrix), mode = "directed", 
-                                     weighted = 'interaction')
+    if(method == 'scan-student'){
+      # in case the adjacency was built manually and not standardized within-groups
+      E(g)$group <- ifelse(substr(ends(g, E(g))[, 1], 1, 
+                                  1) == substr(ends(g, E(g))[, 2], 1, 1), 'within', 
+                           'between')
+    }
   }
   
   g <- add.graph.attributes(g, name = name, method = method)
@@ -283,7 +293,7 @@ graph.from.adjacency <- function(file, method, name = ''){
   return(g)
 }
 
-add.graph.attributes <- function(g, name, method){
+add.graph.attributes <- function(g, method, name = ''){
 #' Add graph attributes
 #' 
 #' Adds certain attributes that will be used in graph plotting and/or analysis
