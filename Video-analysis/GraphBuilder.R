@@ -148,8 +148,7 @@ boris.to.adjacency <- function(file1, nvid1, offset1 = 0, file2 = NULL,
       mutate(Subject1 = strsplit(Subjects, ':')[[1]][1],
              Subject2 = strsplit(Subjects, ':')[[1]][2],
              Time = round(times.vec)) %>%
-      select(-c('Subjects', 'times.vec')) %>%
-      filter(Time > 0)
+      select(-c('Subjects', 'times.vec'))
     
     g <- graph_from_data_frame(df.times, directed = directed)
     E(g)$time <- df.times$Time
@@ -254,20 +253,23 @@ boris.to.adjacency <- function(file1, nvid1, offset1 = 0, file2 = NULL,
   g <- igraph::permute(g, match(V(g)$name, sort(V(g)$name)))
   a <- as_adjacency_matrix(g, attr = ifelse(method %like% 'scan', 'time', 'count'), type = 'both',
                            sparse = FALSE)
-  a[a == 0] <- ''
+  a[(a == 0) | is.na(a)] <- ''
   write.csv(a, filename)
   return(g)
   
 }
 
-graph.from.adjacency <- function(file, method, directed = FALSE, name = ''){
+graph.from.adjacency <- function(file, method, directed = FALSE, name = '', 
+                                 excludeNodes = NULL){
 #' Create a graph
 #' 
 #' Creates a graph object from an adjacency matrix
 #' 
 #' @param file adjacency matrix in csv format
 #' @param method Either scan-student, scan-group, or skip
+#' @param directed binary; whether graph is directed or undirected
 #' @param name optional parameter for title of graph
+#' @param excludeNodes vector of nodes to remove from the graph
 #' 
 #' returns a graph object
   
@@ -277,6 +279,9 @@ graph.from.adjacency <- function(file, method, directed = FALSE, name = ''){
   g <- graph_from_adjacency_matrix(as.matrix(matrix), 
                                    mode = ifelse(directed, "directed", "undirected"),
                                    weighted = TRUE)
+  if(!is.null(excludeNodes)){
+    g <- induced_subgraph(g, !(V(g)$name %in% excludeNodes))
+  }
   
   if(method != 'scan-group'){
     V(g)$group <- substr(V(g)$name, 1, 1)
@@ -288,76 +293,85 @@ graph.from.adjacency <- function(file, method, directed = FALSE, name = ''){
     }
   }
   
-  g <- add.graph.attributes(g, name = name, method = method)
-  
-  return(g)
-}
-
-add.graph.attributes <- function(g, method, name = ''){
-#' Add graph attributes
-#' 
-#' Adds certain attributes that will be used in graph plotting and/or analysis
-#' 
-#' @param g graph object
-#' @param name title of graph
-#' @param method method used to produce BORIS files, either scan, skip, or TA
-#' 
-#' returns a graph object
-  
-  E(g)$color <- adjustcolor('black', 0.5)
-  
-  V(g)$centr.deg <- centralization.degree(g)$res
-  
-  if(method == 'scan'){
-    E(g)$time <- E(g)$time/60 # put time in units of minutes
-    E(g)$weight <- E(g)$time/max(E(g)$time) * 5
-    E(g)$line.type <- 2 * (E(g)$group == 'within') + 1
-    V(g)$size <- (V(g)$centr.deg + 1)/max(V(g)$centr.deg) * 15
-  } else if(method == 'skip') {
-    E(g)$weight <- E(g)$count/max(E(g)$count) * 5
-    E(g)$line.type <- 1
-    V(g)$size <- (V(g)$centr.deg + 1)/max(V(g)$centr.deg) * 15
-  } else {
-    E(g)$weight <- E(g)$time/max(E(g)$time) * 5
-    E(g)$line.type <- 1
-    # normalize against max non-TA node
-    V(g)$size <- (V(g)$centr.deg + 1)/max(V(g)$centr.deg[2:length(V(g))]) * 15
+  V(g)$centrality.total <- igraph::degree(g, mode = 'all')
+  V(g)$strength.total <- strength(g, mode = 'all')
+  if(is_directed(g)){
+    V(g)$centrality.in <- igraph::degree(g, mode = 'in')
+    V(g)$strength.in <- strength(g, mode = 'in')
+    V(g)$centrality.out <- igraph::degree(g, mode = 'out')
+    V(g)$strength.out <- strength(g, mode = 'out')
   }
   
-  g$name <- name
-  
   return(g)
-  
 }
 
-plot.graph <- function(g, method){
+plot.graph <- function(g, vertex.scale = 1, edge.scale = 1, standardNodes = NULL,
+                       layout = NULL, vertex.label = TRUE){
 #' Plot a graph
 #' 
 #' Plots a SNA graph with specified attributes
 #' 
 #' @param g graph object
-#' @param method method used to generate BORIS files, either scan, skip, or TA
+#' @param vertex.scale constant to be multiplied by all vertex sizes
+#' @param edge.scale constant to be multiplied by all edge sizes
+#' @param standardNodes vector of nodes to be excluded from scaling (e.g., 'TA' or 
+#' 'EveryoneTable')
+#' @param layout how to arrange nodes in network; currently accepts 'B03' or 'B22',
+#' anything else will use gem layout. gem layout will be used for any student-level
+#' graph.
+#' @param vertex.label binary; whether to label nodes
 #' 
 #' returns a plot object
-#' 
+  
+  E(g)$color <- adjustcolor('black', 0.5)
+  E(g)$size <- E(g)$weight/max(E(g)$weight) * edge.scale
+  if('group' %in% edge_attr_names(g)){
+    E(g)$line.type <- 2 * (E(g)$group == 'within') + 1
+  } else {
+    E(g)$line.type <- 1
+  }
+  
+  if(!is.null(standardNodes)){
+    # add 1 to centralities to deal with zeros
+    V(g)$size <- ifelse(V(g)$name %in% standardNodes, 1,
+                        (V(g)$centrality.total + 1)/max(V(g)$centrality.total[!(V(g)$name 
+                                                                                %in% 
+                                                                                  standardNodes)]))
+  } else {
+    V(g)$size <- (V(g)$centrality.total + 1)/max(V(g)$centrality.total)
+  }
+  V(g)$size <- V(g)$size * vertex.scale
+  
+  layout.df <- data.frame(row.names = c('Table0', 'Table1', 'Table2', 'Table3', 
+                                        'Table4', 'Table5', 'Table6', 'Table7', 
+                                        'Table8', 'TA', 'EveryoneTable'), 
+                          B03_x = c(-1, -1, -1, -1, -1, 1, 1, 1, 1, 0, 0.5), 
+                          B03_y = c(0, 1, 1.5, 2.5, 3, 1, 1.5, 2.5, 3, 4, 4), 
+                          B22_x = c(NA, -1, 0, -0.5, 0.5, 1.5, 1, 1.5, NA, 0.5, 0), 
+                          B22_y = c(NA, 1, 1, 0, 0, 0.5, 1, 1.5, NA, 1.5, 1.5))
+  if(layout == 'B03' & !('group' %in% edge_attr_names(g))){
+    l = unname(as.matrix(df[V(g)$name, c('B03_x', 'B03_y')]))
+  } else if(layout == 'B22' & !('group' %in% edge_attr_names(g))){
+    l = unname(as.matrix(df[V(g)$name, c('B22_x', 'B22_y')]))
+  } else { # if no layout or invalid layout given, go to gem
+    l = layout_with_gem(g)
+  }
+  
   pal <- brewer.pal(length(unique(V(g)$group)), "Set1")
   par(mar = c(0, 0, 0, 0))
-  
-  if(method != 'TA'){
+  if('group' %in% vertex_attr_names(g)){
     g$palette <- categorical_pal(max(V(g)$group))
     V(g)$color <- V(g)$group
-    
-    plot(g, edge.width = E(g)$weight, edge.color = E(g)$color, vertex.size = V(g)$size, 
-         layout = layout_with_gem(g), edge.curved = 0.2, vertex.label = NA, 
-         edge.lty = E(g)$line.type)
   } else {
     g$palette <- categorical_pal(2)
-    V(g)$color <- ifelse(V(g)$name == 'TA', 1, 2)
-    V(g)$size[1] <- max(V(g)$size[2:length(V(g))])
-    
-    plot(g, edge.width = E(g)$weight, edge.color = E(g)$color, vertex.size = V(g)$size, 
-         layout = layout_with_gem(g), edge.curved = 0.2, edge.lty = E(g)$line.type)
+    V(g)$color <- ifelse(V(g)$name %in% c('TA', 'EveryoneTable'), 1, 2)
   }
 
+  # need vectors of vertex.label binaries to go with ifelse()
+  plot(g, edge.width = E(g)$size, edge.color = E(g)$color, 
+       vertex.size = V(g)$size, layout = l, edge.curved = 0.2, 
+       edge.lty = E(g)$line.type, vertex.label = ifelse(rep(vertex.label, 
+                                                            length(V(g))), 
+                                                        V(g)$name, NA))
   title(g$name, line = -20, adj = 0.1)
 }
