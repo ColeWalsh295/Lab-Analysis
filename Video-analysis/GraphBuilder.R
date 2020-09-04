@@ -8,7 +8,6 @@ library(RColorBrewer)
 library(zoo)
 library(docstring)
 
-
 boris.to.adjacency <- function(file1, nvid1, offset1 = 0, file2 = NULL, 
                                nvid2 = NULL, offset2 = 0, method = 'scan-student', 
                                ignore.begin = FALSE, collapse.group = FALSE, 
