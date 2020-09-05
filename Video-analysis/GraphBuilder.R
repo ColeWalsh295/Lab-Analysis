@@ -355,13 +355,18 @@ plot.graph <- function(g, vertex.scale = 1, edge.scale = 1, standardNodes = NULL
                           B03_y = c(0, 1, 1.5, 2.5, 3, 1, 1.5, 2.5, 3, 4, 4), 
                           B22_x = c(NA, -1, 0, -0.5, 0.5, 1.5, 1, 1.5, NA, 0.5, 0), 
                           B22_y = c(NA, 1, 1, 0, 0, 0.5, 1, 1.5, NA, 1.5, 1.5))
-  if(layout == 'B03' & !('group' %in% edge_attr_names(g))){
-    l = unname(as.matrix(df[V(g)$name, c('B03_x', 'B03_y')]))
-  } else if(layout == 'B22' & !('group' %in% edge_attr_names(g))){
-    l = unname(as.matrix(df[V(g)$name, c('B22_x', 'B22_y')]))
-  } else { # if no layout or invalid layout given, go to gem
+  if(!is.null(layout)){
+    if(layout == 'B03' & !('group' %in% edge_attr_names(g))){
+      l = unname(as.matrix(df[V(g)$name, c('B03_x', 'B03_y')]))
+    } else if(layout == 'B22' & !('group' %in% edge_attr_names(g))){
+      l = unname(as.matrix(df[V(g)$name, c('B22_x', 'B22_y')]))
+    } else { # if no layout or invalid layout given, go to gem
+      l = layout_with_gem(g)
+    }
+  } else {
     l = layout_with_gem(g)
   }
+
   
   pal <- brewer.pal(length(unique(V(g)$group)), "Set1")
   par(mar = c(0, 0, 0, 0))
