@@ -1,0 +1,172 @@
+# Load necessary packages
+```{r, results = 'hide', message = FALSE, warning = FALSE}
+source('GraphBuilder.R')
+library(ggplot2)
+library(NetworkDistance)
+library(sna)
+library(xlsx)
+library(RSiena)
+theme_set(theme_classic(base_size = 10))
+```
+
+# Make directed student-level adjacency matrices
+```{r}
+g <- boris.to.adjacency(file1 = 'C:/Users/Cole/Box Sync/Network analysis/Exported_Data/P1112_Fall2019/Scan_Method/Scan_9_11_cam1_CW.csv', 
+                        nvid1 = 3, 
+                        file2 = 'C:/Users/Cole/Box Sync/Network analysis/Exported_Data/P1112_Fall2019/Scan_Method/Scan_9_11_cam2_CW.csv', 
+                        nvid2 = 6, directed = TRUE, 
+                        filename = 'Directed/Scan-directed_9_11.csv')
+
+g <- boris.to.adjacency(file1 = 'C:/Users/Cole/Box Sync/Network analysis/Exported_Data/P1112_Fall2019/Scan_Method/Scan_9_18_cam1_CW.csv', 
+                        nvid1 = 5, 
+                        file2 = 'C:/Users/Cole/Box Sync/Network analysis/Exported_Data/P1112_Fall2019/Scan_Method/Scan_9_18_cam2_CW.csv', 
+                        nvid2 = 7, directed = TRUE, 
+                        filename = 'Directed/Scan-directed_9_18.csv')
+
+g <- boris.to.adjacency('C:/Users/Cole/Box Sync/Network analysis/Exported_Data/P1112_Fall2019/Scan_Method/Scan_9_25_cam_CW.csv', 
+                        nvid1 = 1, directed = TRUE, 
+                        filename = 'Directed/Scan-directed_9_25.csv')
+
+g <- boris.to.adjacency(file1 = 'C:/Users/Cole/Box Sync/Network analysis/Exported_Data/P1112_Fall2019/Scan_Method/Scan_10_9_cam1_MS.csv', 
+                        nvid1 = 6, 
+                        file2 = 'C:/Users/Cole/Box Sync/Network analysis/Exported_Data/P1112_Fall2019/Scan_Method/Scan_10_9_cam2_MS.csv', 
+                        nvid2 = 6, offset2 = 164, directed = TRUE, 
+                        filename = 'Directed/Scan-directed_10_9.csv')
+
+g <- boris.to.adjacency('C:/Users/Cole/Box Sync/Network analysis/Exported_Data/P1112_Fall2019/Scan_Method/Scan_10_23_all_MS.csv', 
+                        nvid1 = 9, directed = TRUE, 
+                        filename = 'Directed/Scan-directed_10_23.csv')
+
+g <- boris.to.adjacency(file1 = 'C:/Users/Cole/Box Sync/Network analysis/Exported_Data/P1112_Fall2019/Scan_Method/Scan_10_30_cam1_MS.csv', 
+                        nvid1 = 6, 
+                        file2 = 'C:/Users/Cole/Box Sync/Network analysis/Exported_Data/P1112_Fall2019/Scan_Method/Scan_10_30_cam2_MS.csv', 
+                        nvid2 = 5, offset2 = 116, directed = TRUE, 
+                        filename = 'Directed/Scan-directed_10_30.csv')
+
+g <- boris.to.adjacency(file1 = 'C:/Users/Cole/Box Sync/Network analysis/Exported_Data/P1112_Fall2019/Scan_Method/Scan_11_13_cam1_MS.csv', 
+                        nvid1 = 6, 
+                        file2 = 'C:/Users/Cole/Box Sync/Network analysis/Exported_Data/P1112_Fall2019/Scan_Method/Scan_11_13_cam2_MS.csv', 
+                        nvid2 = 5, offset2 = 154, directed = TRUE, 
+                        filename = 'Directed/Scan-directed_11_13.csv')
+
+g <- boris.to.adjacency(file1 = 'C:/Users/Cole/Box Sync/Network analysis/Exported_Data/P1112_Fall2019/Scan_Method/Scan_11_20_cam1_MS.csv', 
+                        nvid1 = 6, 
+                        file2 = 'C:/Users/Cole/Box Sync/Network analysis/Exported_Data/P1112_Fall2019/Scan_Method/Scan_11_20_cam2_MS.csv', 
+                        nvid2 = 5, offset2 = 94, directed = TRUE, 
+                        filename = 'Directed/Scan-directed_11_20.csv')
+```
+
+# Create graphs from adjacencies
+```{r}
+g1 <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1112_Fall2019/Scan_Method/Directed/Scan-directed_9_11.csv', 
+                           'scan-student', directed = TRUE, name = 'Time 1')
+
+g2 <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1112_Fall2019/Scan_Method/Directed/Scan-directed_9_18.csv', 
+                           'scan-student', directed = TRUE, name = 'Time 2')
+
+g3 <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1112_Fall2019/Scan_Method/Directed/Scan-directed_9_25.csv', 
+                           'scan-student', directed = TRUE, name = 'Time 3')
+
+g4 <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1112_Fall2019/Scan_Method/Directed/Scan-directed_10_9.csv', 
+                           'scan-student', directed = TRUE, name = 'Time 4')
+
+g5 <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1112_Fall2019/Scan_Method/Directed/Scan-directed_10_23.csv', 
+                           'scan-student', directed = TRUE, name = 'Time 5')
+
+g6 <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1112_Fall2019/Scan_Method/Directed/Scan-directed_10_30.csv', 
+                           'scan-student', directed = TRUE, name = 'Time 6')
+
+g7 <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1112_Fall2019/Scan_Method/Directed/Scan-directed_11_13.csv', 
+                           'scan-student', directed = TRUE, name = 'Time 7')
+
+g8 <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1112_Fall2019/Scan_Method/Directed/Scan-directed_11_20.csv', 
+                           'scan-student', directed = TRUE, name = 'Time 8')
+```
+
+# Assign student names to vertices
+```{r}
+names.df <- read.xlsx2('C:/Users/Cole/Box Sync/Network analysis/Student_RostersCodes/P1112_Fall2019_StudentCodes.xlsx', 
+                       sheetName = '408 - Scan', stringsAsFactors = FALSE) %>%
+  select(-Photo) %>%
+  rowwise() %>%
+  mutate(Name = strsplit(Name, ',')[[1]][1]) %>%
+  `colnames<-`(c('Name', 'Time.1', 'Time.2', 'Time.3', 'Time.4', 'Time.5', 
+                   'Time.6', 'Time.7', 'Time.8')) %>%
+  filter(!is.na(Name))
+
+students <- names.df[['Name']]
+
+names.df[names.df == '(not present)'] <- NA_character_
+
+set.student.names <- function(g, time){
+  # convert vertex names for a given graph to student names
+  student.ids <- names.df[[paste('Time', time, sep = '.')]]
+  g <- induced_subgraph(g, V(g)$name %in% student.ids)
+  v <- names.df[!is.na(student.ids),][order(student.ids),]$Name
+  v <- v[!is.na(v)]
+  V(g)$name <- v
+  
+  absentees <- students[!(students %in% V(g)$name)]
+  for(student in absentees){
+    g <- add_vertices(g, 1, attr = list(name = student, 
+                                        group = as.numeric(max(V(g)$group)) + 1,
+                                        centrality.total = 0,
+                                        strength.total = 0,
+                                        centrality.in = 0,
+                                        strength.in = 0,
+                                        centrality.out = 0,
+                                        strength.out = 0))
+  }
+  g <- igraph::permute(g, match(V(g)$name, students))
+  return(g)
+}
+
+g1 <- set.student.names(g1, 1)
+g2 <- set.student.names(g2, 2)
+g3 <- set.student.names(g3, 3)
+g4 <- set.student.names(g4, 4)
+g5 <- set.student.names(g5, 5)
+g6 <- set.student.names(g6, 6)
+g7 <- set.student.names(g7, 7)
+g8 <- set.student.names(g8, 8)
+```
+
+# Create SIENA object
+```{r}
+time.networks <- array(c(as_adjacency_matrix(g1, sparse = FALSE), 
+                         as_adjacency_matrix(g2, sparse = FALSE), 
+                         as_adjacency_matrix(g3, sparse = FALSE), 
+                         as_adjacency_matrix(g4, sparse = FALSE), 
+                         as_adjacency_matrix(g5, sparse = FALSE), 
+                         as_adjacency_matrix(g6, sparse = FALSE), 
+                         as_adjacency_matrix(g7, sparse = FALSE), 
+                         as_adjacency_matrix(g8, sparse = FALSE)), 
+                       dim = c(length(students), length(students), 8))
+
+interactions <- sienaDependent(time.networks)
+
+names.df$Gender <-  c('W', 'M', 'M', 'M', 'M', 'W', 'M', 'M', 'M', 'M', 'M', 'W', 
+                      'M', 'W', 'W', 'W', 'W', 'W', 'M')
+names.df$Gender <- ifelse(names.df$Gender == 'M', 0, 1)
+gender <- coCovar(names.df$Gender)
+data <- sienaDataCreate(interactions, gender)
+data
+```
+
+# Add effects and run algorithm
+```{r}
+eff <- getEffects(data)
+effectsDocumentation(eff)
+
+eff <- includeEffects(eff, recip)
+eff <- includeEffects(eff, simX, interaction1 = "gender" )
+eff
+
+alg <- sienaAlgorithmCreate(projname = 'F19-P1112-lab-interactions', seed = 11)
+result <- siena07(alg, data = data, effects = eff)
+result
+```
+
+
+
+
