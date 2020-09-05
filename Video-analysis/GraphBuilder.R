@@ -115,6 +115,12 @@ boris.to.adjacency <- function(file1, nvid1, offset1 = 0, file2 = NULL,
                                                                students[student2], 
                                                                sep = ':')] + 
                   df.fill[(row + 1),  'Time'] - df.fill[row, 'Time']
+                
+                times.vec[paste(students[student2], students[student1], 
+                                sep = ':')] <- times.vec[paste(students[student2], 
+                                                               students[student1], 
+                                                               sep = ':')] + 
+                  df.fill[(row + 1),  'Time'] - df.fill[row, 'Time']
               } else if(students[student1] %like% substr(df.fill[row, student1], 
                                                          6, 6)){
                 # check which table students are at...if it is not either student's table 
@@ -151,7 +157,7 @@ boris.to.adjacency <- function(file1, nvid1, offset1 = 0, file2 = NULL,
     
     g <- graph_from_data_frame(df.times, directed = directed)
     E(g)$time <- df.times$Time
-    
+
     if(!is.null(TA.adjacency)){
       matrix <- read.csv(TA.adjacency, header = TRUE, row.names = 1, check.names = FALSE, 
                          na.strings = "")
