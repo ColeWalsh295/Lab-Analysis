@@ -6,11 +6,12 @@ library(NetworkDistance)
 library(sna)
 library(xlsx)
 library(RSiena)
+library(data.table)
 theme_set(theme_classic(base_size = 10))
 ```
 
 # Make directed student-level adjacency matrices
-```{r}
+```{r, eval = FALSE}
 g <- boris.to.adjacency(file1 = 'C:/Users/Cole/Box Sync/Network analysis/Exported_Data/P1112_Fall2019/Scan_Method/Scan_9_11_cam1_CW.csv', 
                         nvid1 = 3, 
                         file2 = 'C:/Users/Cole/Box Sync/Network analysis/Exported_Data/P1112_Fall2019/Scan_Method/Scan_9_11_cam2_CW.csv', 
@@ -102,7 +103,8 @@ set.student.names <- function(g, time){
   # convert vertex names for a given graph to student names
   student.ids <- names.df[[paste('Time', time, sep = '.')]]
   g <- induced_subgraph(g, V(g)$name %in% student.ids)
-  v <- names.df[!is.na(student.ids),][order(student.ids),]$Name
+  v <- names.df[!is.na(student.ids),
+                ][order(student.ids[!is.na(student.ids)]),]$Name
   v <- v[!is.na(v)]
   V(g)$name <- v
   
@@ -131,7 +133,9 @@ g7 <- set.student.names(g7, 7)
 g8 <- set.student.names(g8, 8)
 ```
 
-# Create SIENA object
+# Evaluate whole networks
+
+## Create SIENA object
 ```{r}
 time.networks <- array(c(as_adjacency_matrix(g1, sparse = FALSE), 
                          as_adjacency_matrix(g2, sparse = FALSE), 
@@ -153,20 +157,369 @@ data <- sienaDataCreate(interactions, gender)
 data
 ```
 
-# Add effects and run algorithm
+## Add effects and run algorithm
 ```{r}
 eff <- getEffects(data)
 effectsDocumentation(eff)
 
-eff <- includeEffects(eff, recip)
-eff <- includeEffects(eff, simX, interaction1 = "gender" )
+eff <- includeEffects(eff, recip, inPop, outAct, transRecTrip)
+eff <- includeEffects(eff, simX, egoX, altX, interaction1 = "gender" )
 eff
 
 alg <- sienaAlgorithmCreate(projname = 'F19-P1112-lab-interactions', seed = 11)
-result <- siena07(alg, data = data, effects = eff)
+result <- siena07(alg, data = data, effects = eff, returnDeps = TRUE)
 result
+
+#sienaGOF(result, IndegreeDistribution, join = TRUE, varName = 'time.networks')
 ```
 
+# Evaluate between-groups network
 
+## Reduce whole networks to between-groups network
+```{r}
+Reduce.graph <- function(g, edge.type){
+  # remove within-group edges from graph
+  g.reduce <- subgraph.edges(g, E(g)[E(g)$group == edge.type], 
+                              delete.vertices = FALSE)
+  return(g.reduce)
+}
 
+g1.between  <- Reduce.graph(g1, edge.type = 'between')
+g2.between  <- Reduce.graph(g2, edge.type = 'between')
+g3.between  <- Reduce.graph(g3, edge.type = 'between')
+g4.between  <- Reduce.graph(g4, edge.type = 'between')
+g5.between  <- Reduce.graph(g5, edge.type = 'between')
+g6.between  <- Reduce.graph(g6, edge.type = 'between')
+g7.between  <- Reduce.graph(g7, edge.type = 'between')
+g8.between  <- Reduce.graph(g8, edge.type = 'between')
+```
 
+## Create SIENA object
+```{r}
+time.between.networks <- array(c(as_adjacency_matrix(g1.between, sparse = FALSE), 
+                                 as_adjacency_matrix(g2.between, sparse = FALSE),
+                                 as_adjacency_matrix(g3.between, sparse = FALSE), 
+                                 as_adjacency_matrix(g4.between, sparse = FALSE), 
+                                 as_adjacency_matrix(g5.between, sparse = FALSE),
+                                 as_adjacency_matrix(g6.between, sparse = FALSE), 
+                                 as_adjacency_matrix(g7.between, sparse = FALSE),
+                                 as_adjacency_matrix(g8.between, sparse = FALSE)),
+                               dim = c(length(students), length(students), 8))
+
+between.interactions <- sienaDependent(time.between.networks)
+between.data <- sienaDataCreate(between.interactions, gender)
+between.data
+```
+
+## Add effects and run algorithm
+```{r}
+eff <- getEffects(between.data)
+effectsDocumentation(eff)
+
+eff <- includeEffects(eff, recip)
+eff
+
+alg <- sienaAlgorithmCreate(projname = 'F19-P1112-lab-interactions', seed = 11)
+result <- siena07(alg, data = between.data, effects = eff, returnDeps = TRUE)
+result
+
+#sienaGOF(result, IndegreeDistribution, join = TRUE, varName = 'time.networks')
+```
+
+# Which groups do students visit in subsequent weeks?
+
+## Get obsered interactions between groups
+
+### Construct between-groups interactions data.frame for each student for each lab
+```{r}
+create.edglist <- function(g, edge.type, suffix, vertices = FALSE){
+  g.reduce <- Reduce.graph(g, edge.type = edge.type)
+  df <- igraph::as_data_frame(g.reduce, what = 'edges')[, c('from', 'to')]
+  df[[paste(edge.type, suffix, sep = '.')]] <- 1
+  if(vertices){
+    df.vertices <- igraph::as_data_frame(g.reduce, 
+                                         what = 'vertices')[, c('name', 
+                                                                'group')] %>%
+      `colnames<-`(c('name', paste('group', suffix, sep = '.')))
+    df <- left_join(df, df.vertices, by = c('to' = 'name'))
+  }
+  return(df)
+}
+
+within.1 <- create.edglist(g1, 'within', 1)
+within.2 <- create.edglist(g2, 'within', 2)
+within.3 <- create.edglist(g3, 'within', 3)
+within.4 <- create.edglist(g4, 'within', 4)
+within.5 <- create.edglist(g5, 'within', 5)
+within.6 <- create.edglist(g6, 'within', 6)
+within.7 <- create.edglist(g7, 'within', 7)
+within.8 <- create.edglist(g8, 'within', 8)
+
+within.df <- Reduce(function(x,y) full_join(x = x, y = y, by = c('from', 'to')),
+                    list(within.1, within.2, within.3, within.4, within.5,
+                         within.6, within.7, within.8))
+
+between.1 <- create.edglist(g1, 'between', 1, vertices = TRUE)
+between.2 <- create.edglist(g2, 'between', 2, vertices = TRUE)
+between.3 <- create.edglist(g3, 'between', 3, vertices = TRUE)
+between.4 <- create.edglist(g4, 'between', 4, vertices = TRUE)
+between.5 <- create.edglist(g5, 'between', 5, vertices = TRUE)
+between.6 <- create.edglist(g6, 'between', 6, vertices = TRUE)
+between.7 <- create.edglist(g7, 'between', 7, vertices = TRUE)
+between.8 <- create.edglist(g8, 'between', 8, vertices = TRUE)
+
+between.df <- Reduce(function(x,y) full_join(x = x, y = y, by = c('from', 'to')),
+                     list(between.1, between.2, between.3, between.4, between.5, 
+                          between.6, between.7, between.8))
+
+full.df <- left_join(between.df, within.df, by = c('from', 'to'))
+```
+
+### Construct data.frame of obesrved interactions
+```{r}
+df.3 <- full.df %>%
+  filter(!is.na(between.3)) %>%
+  group_by(from, group.3) %>%
+  summarize(first.lab = 1 * (sum(within.1, na.rm = TRUE) + 
+              sum(within.2, na.rm = TRUE) > 0),
+            previous.lab = 1 * (sum(within.1, na.rm = TRUE) + 
+              sum(within.2, na.rm = TRUE) > 0), 
+            all.labs = 1 * (sum(within.1, na.rm = TRUE) + 
+              sum(within.2, na.rm = TRUE) > 0)) %>%
+  select(-group.3) %>%
+  mutate(lab = 3)
+
+df.4 <- full.df %>%
+  filter(!is.na(between.4)) %>%
+  group_by(from, group.4) %>%
+  summarize(first.lab = 1 * (sum(within.1, na.rm = TRUE) + 
+              sum(within.2, na.rm = TRUE) > 0),
+            previous.lab = 1 * (sum(within.1, na.rm = TRUE) + 
+              sum(within.2, na.rm = TRUE) > 0), 
+            all.labs = 1 * (sum(within.1, na.rm = TRUE) + 
+              sum(within.2, na.rm = TRUE) > 0)) %>%
+  select(-group.4) %>%
+  mutate(lab = 4)
+
+df.5 <- full.df %>%
+  filter(!is.na(between.5)) %>%
+  group_by(from, group.5) %>%
+  summarize(first.lab = 1 * (sum(within.1, na.rm = TRUE) + 
+              sum(within.2, na.rm = TRUE) > 0),
+            previous.lab = 1 * (sum(within.3, na.rm = TRUE) + 
+              sum(within.4, na.rm = TRUE) > 0), 
+            all.labs = 1 * (sum(within.1, na.rm = TRUE) + 
+              sum(within.2, na.rm = TRUE) + sum(within.3, na.rm = TRUE) +
+                sum(within.4, na.rm = TRUE) > 0)) %>%
+  select(-group.5) %>%
+  mutate(lab = 5)
+
+df.6 <- full.df %>%
+  filter(!is.na(between.6)) %>%
+  group_by(from, group.6) %>%
+  summarize(first.lab = 1 * (sum(within.1, na.rm = TRUE) + 
+              sum(within.2, na.rm = TRUE) > 0),
+            previous.lab = 1 * (sum(within.3, na.rm = TRUE) + 
+              sum(within.4, na.rm = TRUE) > 0), 
+            all.labs = 1 * (sum(within.1, na.rm = TRUE) + 
+              sum(within.2, na.rm = TRUE) + sum(within.3, na.rm = TRUE) +
+                sum(within.4, na.rm = TRUE) > 0)) %>%
+  select(-group.6) %>%
+  mutate(lab = 6)
+
+df.7 <- full.df %>%
+  filter(!is.na(between.7)) %>%
+  group_by(from, group.7) %>%
+  summarize(first.lab = 1 * (sum(within.1, na.rm = TRUE) + 
+              sum(within.2, na.rm = TRUE) > 0),
+            previous.lab = 1 * (sum(within.5, na.rm = TRUE) + 
+              sum(within.6, na.rm = TRUE) > 0), 
+            all.labs = 1 * (sum(within.1, na.rm = TRUE) + 
+              sum(within.2, na.rm = TRUE) + sum(within.3, na.rm = TRUE) +
+                sum(within.4, na.rm = TRUE) + sum(within.5, na.rm = TRUE) + 
+                sum(within.6, na.rm = TRUE) > 0)) %>%
+  select(-group.7) %>%
+  mutate(lab = 7)
+
+df.8 <- full.df %>%
+  filter(!is.na(between.8)) %>%
+  group_by(from, group.8) %>%
+  summarize(first.lab = 1 * (sum(within.1, na.rm = TRUE) + 
+              sum(within.2, na.rm = TRUE) > 0),
+            previous.lab = 1 * (sum(within.5, na.rm = TRUE) + 
+              sum(within.6, na.rm = TRUE) > 0), 
+            all.labs = 1 * (sum(within.1, na.rm = TRUE) + 
+              sum(within.2, na.rm = TRUE) + sum(within.3, na.rm = TRUE) +
+                sum(within.4, na.rm = TRUE) + sum(within.5, na.rm = TRUE) + 
+                sum(within.6, na.rm = TRUE) > 0)) %>%
+  select(-group.8) %>%
+  mutate(lab = 8)
+
+observed.df <- bind_rows(df.3, df.4, df.5, df.6, df.7, df.8)
+```
+
+## Get probabilities of interactions occuring at random
+
+### Construct baseline interactions data.frame for each student for each lab
+```{r}
+baseline.df <- expand.grid(V(g1.between)$name, V(g1.between)$name)
+colnames(baseline.df) <- c('from', 'to')
+
+Get.groups <- function(g, suffix){
+  vertices <- igraph::as_data_frame(g, what = 'vertices')[, c('name', 'group')]
+  
+  df <- left_join(baseline.df, vertices, by = c('from' = 'name'))
+  df <- left_join(df, vertices, by = c('to' = 'name'), suffix = c('.from', '.to'))
+  
+  colnames(df) <- c('from', 'to', paste('group.from', suffix, sep = '.'), 
+                    paste('group.to', suffix, sep = '.'))
+  
+  # absent students are in a group alone...change their group to NA
+  dt <- data.table(df)[, N := .N, c('from', paste('group.to', suffix, sep = '.'))]
+  dt[[paste('group.to', suffix, 
+            sep = '.')]] <- ifelse(dt$N > 1, dt[[paste('group.to', suffix, 
+                                                       sep = '.')]], 
+                                   NA_character_)
+  return(dt)
+}
+
+baseline.df <- Reduce(function(x,y) left_join(x = x, y = y, by = c('from', 'to')),
+                     list(Get.groups(g1, 1), Get.groups(g2, 2), Get.groups(g3, 3),
+                          Get.groups(g4, 4), Get.groups(g5, 5), Get.groups(g6, 6),
+                          Get.groups(g7, 7), Get.groups(g8, 8)))
+```
+
+### Construct data.frame of probabilities of interactions with previous group members
+```{r}
+df.3 <- baseline.df %>%
+  filter(group.from.3 != group.to.3) %>%
+  group_by(from, group.to.3) %>%
+  summarize(first.lab = 1 * ((sum(group.from.1 == group.to.1, na.rm = TRUE) +
+                                sum(group.from.2 == group.to.2, na.rm = TRUE)) >
+                               0),
+            previous.lab = 1 * ((sum(group.from.1 == group.to.1, na.rm = TRUE) +
+                                   sum(group.from.2 == group.to.2, 
+                                       na.rm = TRUE)) > 0),
+            all.labs = 1 * ((sum(group.from.1 == group.to.1, na.rm = TRUE) +
+                               sum(group.from.2 == group.to.2, na.rm = TRUE)) >
+                               0)) %>%
+  select(-group.to.3) %>%
+  mutate(lab = 3)
+
+df.4 <- baseline.df %>%
+  filter(group.from.4 != group.to.4) %>%
+  group_by(from, group.to.4) %>%
+  summarize(first.lab = 1 * ((sum(group.from.1 == group.to.1, na.rm = TRUE) +
+                                sum(group.from.2 == group.to.2, na.rm = TRUE)) >
+                               0),
+            previous.lab = 1 * ((sum(group.from.1 == group.to.1, na.rm = TRUE) +
+                                   sum(group.from.2 == group.to.2, 
+                                       na.rm = TRUE)) > 0),
+            all.labs = 1 * ((sum(group.from.1 == group.to.1, na.rm = TRUE) +
+                               sum(group.from.2 == group.to.2, na.rm = TRUE)) >
+                               0)) %>%
+  select(-group.to.4) %>%
+  mutate(lab = 4)
+
+df.5 <- baseline.df %>%
+  filter(group.from.5 != group.to.5) %>%
+  group_by(from, group.to.5) %>%
+  summarize(first.lab = 1 * ((sum(group.from.1 == group.to.1, na.rm = TRUE) +
+                                sum(group.from.2 == group.to.2, na.rm = TRUE)) >
+                               0),
+            previous.lab = 1 * ((sum(group.from.3 == group.to.3, na.rm = TRUE) +
+                                   sum(group.from.4 == group.to.4, 
+                                       na.rm = TRUE)) > 0),
+            all.labs = 1 * ((sum(group.from.1 == group.to.1, na.rm = TRUE) +
+                               sum(group.from.2 == group.to.2, na.rm = TRUE) +
+                               sum(group.from.3 == group.to.3, na.rm = TRUE) +
+                               sum(group.from.4 == group.to.4, na.rm = TRUE)) >
+                               0)) %>%
+  select(-group.to.5) %>%
+  mutate(lab = 5)
+
+df.6 <- baseline.df %>%
+  filter(group.from.6 != group.to.6) %>%
+  group_by(from, group.to.6) %>%
+  summarize(first.lab = 1 * ((sum(group.from.1 == group.to.1, na.rm = TRUE) +
+                                sum(group.from.2 == group.to.2, na.rm = TRUE)) >
+                               0),
+            previous.lab = 1 * ((sum(group.from.3 == group.to.3, na.rm = TRUE) +
+                                   sum(group.from.4 == group.to.4, 
+                                       na.rm = TRUE)) > 0),
+            all.labs = 1 * ((sum(group.from.1 == group.to.1, na.rm = TRUE) +
+                               sum(group.from.2 == group.to.2, na.rm = TRUE) +
+                               sum(group.from.3 == group.to.3, na.rm = TRUE) +
+                               sum(group.from.4 == group.to.4, na.rm = TRUE)) >
+                               0)) %>%
+  select(-group.to.6) %>%
+  mutate(lab = 6)
+
+df.7 <- baseline.df %>%
+  filter(group.from.7 != group.to.7) %>%
+  group_by(from, group.to.7) %>%
+  summarize(first.lab = 1 * ((sum(group.from.1 == group.to.1, na.rm = TRUE) +
+                                sum(group.from.2 == group.to.2, na.rm = TRUE)) >
+                               0),
+            previous.lab = 1 * ((sum(group.from.5 == group.to.5, na.rm = TRUE) +
+                                   sum(group.from.6 == group.to.6, 
+                                       na.rm = TRUE)) > 0),
+            all.labs = 1 * ((sum(group.from.1 == group.to.1, na.rm = TRUE) +
+                               sum(group.from.2 == group.to.2, na.rm = TRUE) +
+                               sum(group.from.3 == group.to.3, na.rm = TRUE) +
+                               sum(group.from.4 == group.to.4, na.rm = TRUE) +
+                               sum(group.from.5 == group.to.5, na.rm = TRUE) +
+                               sum(group.from.6 == group.to.6, na.rm = TRUE)) >
+                               0)) %>%
+  select(-group.to.7) %>%
+  mutate(lab = 7)
+
+df.8 <- baseline.df %>%
+  filter(group.from.8 != group.to.8) %>%
+  group_by(from, group.to.8) %>%
+  summarize(first.lab = 1 * ((sum(group.from.1 == group.to.1, na.rm = TRUE) +
+                                sum(group.from.2 == group.to.2, na.rm = TRUE)) >
+                               0),
+            previous.lab = 1 * ((sum(group.from.5 == group.to.5, na.rm = TRUE) +
+                                   sum(group.from.6 == group.to.6, 
+                                       na.rm = TRUE)) > 0),
+            all.labs = 1 * ((sum(group.from.1 == group.to.1, na.rm = TRUE) +
+                               sum(group.from.2 == group.to.2, na.rm = TRUE) +
+                               sum(group.from.3 == group.to.3, na.rm = TRUE) +
+                               sum(group.from.4 == group.to.4, na.rm = TRUE) +
+                               sum(group.from.5 == group.to.5, na.rm = TRUE) +
+                               sum(group.from.6 == group.to.6, na.rm = TRUE)) >
+                               0)) %>%
+  select(-group.to.8) %>%
+  mutate(lab = 8)
+
+probability.df <- bind_rows(df.3, df.4, df.5, df.6, df.7, df.8) %>%
+  group_by(from, lab) %>%
+  summarize_all(mean)
+```
+
+## Combine observed and probability data.frames
+```{r}
+observed.probability.df <- left_join(observed.df, probability.df, 
+                                     by = c('from', 'lab'), 
+                                     suffix = c('.observed', '.probability'))
+
+melted.df <- observed.probability.df %>%
+  ungroup() %>%
+  select(-from) %>%
+  group_by(lab) %>%
+  summarize_all(mean) %>%
+  melt(id.vars = 'lab', value.name = 'fraction.interactions') %>%
+  mutate(variable = as.character(variable)) %>%
+  rowwise() %>%
+  mutate(type = strsplit(variable, '.', fixed = TRUE)[[1]][3],
+         which = strsplit(variable, '.', fixed = TRUE)[[1]][1]) %>%
+  select(-variable)
+```
+
+## Plot results
+```{r}
+ggplot(melted.df, aes(x = lab, y = fraction.interactions, color = which, 
+                      linetype = type)) +
+  geom_line(size = 1)
+```
