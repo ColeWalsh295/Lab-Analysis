@@ -178,7 +178,7 @@ result
 ## Reduce whole networks to between-groups network
 ```{r}
 Reduce.graph <- function(g, edge.type){
-  # remove within-group edges from graph
+  # remove within or between-group edges from graph
   g.reduce <- subgraph.edges(g, E(g)[E(g)$group == edge.type], 
                               delete.vertices = FALSE)
   return(g.reduce)
@@ -521,5 +521,10 @@ melted.df <- observed.probability.df %>%
 ```{r}
 ggplot(melted.df, aes(x = lab, y = fraction.interactions, color = which, 
                       linetype = type)) +
-  geom_line(size = 1)
+  geom_line(size = 1.2) +
+  theme(text = element_text(size = 14)) +
+  labs(x = 'Lab week', y = 'Fraction of times approaching other groups', 
+       color = 'Previous partner?', linetype = 'Interaction type') +
+  scale_color_discrete(labels = c('Any lab', 'First lab', 'Previous lab')) +
+  scale_linetype_discrete(labels = c('Observed', 'Expected'))
 ```
