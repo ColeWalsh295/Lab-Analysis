@@ -357,9 +357,9 @@ plot.graph <- function(g, vertex.scale = 1, edge.scale = 1, standardNodes = NULL
                           B22_y = c(NA, 1, 1, 0, 0, 0.5, 1, 1.5, NA, 1.5, 1.5))
   if(!is.null(layout)){
     if(layout == 'B03' & !('group' %in% edge_attr_names(g))){
-      l = unname(as.matrix(df[V(g)$name, c('B03_x', 'B03_y')]))
+      l = unname(as.matrix(layout.df[V(g)$name, c('B03_x', 'B03_y')]))
     } else if(layout == 'B22' & !('group' %in% edge_attr_names(g))){
-      l = unname(as.matrix(df[V(g)$name, c('B22_x', 'B22_y')]))
+      l = unname(as.matrix(layout.df[V(g)$name, c('B22_x', 'B22_y')]))
     } else { # if no layout or invalid layout given, go to gem
       l = layout_with_gem(g)
     }
