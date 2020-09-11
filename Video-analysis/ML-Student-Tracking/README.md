@@ -1,1 +1,3 @@
+# ML student tracking
 
+The two python scripts included here were adapted from the [following link](https://www.pyimagesearch.com/2018/07/30/opencv-object-tracking/). Both scripts generate a user-iterface given a video file input allowing the user to select an object to track. With *OpenCV*, the program automatically tracks the location of a selected object over time and logs the object's location which is output for later analysis. `Student_Video_Tracker.py` can be used to follow a single student/object, while `multiple-tracking.py` can be used to follow multiple students/objects and allows the user to reset object trackers when they deviate from the object.
