@@ -1,3 +1,8 @@
+---
+output:
+  pdf_document: default
+  html_document: default
+---
 # Load necessary packages
 ```{r, results = 'hide', message = FALSE, warning = FALSE}
 source('GraphBuilder.R')
@@ -212,7 +217,7 @@ between.data
 ```
 
 ## Add effects and run algorithm
-```{r}
+```{r, eval = FALSE}
 eff <- getEffects(between.data)
 effectsDocumentation(eff)
 
