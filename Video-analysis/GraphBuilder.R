@@ -322,9 +322,9 @@ plot.graph <- function(g, vertex.scale = 1, edge.scale = 1, standardNodes = NULL
 #' @param edge.scale constant to be multiplied by all edge sizes
 #' @param standardNodes vector of nodes to be excluded from scaling (e.g., 'TA' or 
 #' 'EveryoneTable')
-#' @param layout how to arrange nodes in network; currently accepts 'B03' or 'B22',
-#' anything else will use gem layout. gem layout will be used for any student-level
-#' graph.
+#' @param layout how to arrange nodes in network; currently accepts 'B03', 'B22', 
+#' or 'B50',; anything else will use gem layout. gem layout will be used for any 
+#' student-level graph.
 #' @param vertex.label binary; whether to label nodes
 #' 
 #' returns a plot object
@@ -354,12 +354,16 @@ plot.graph <- function(g, vertex.scale = 1, edge.scale = 1, standardNodes = NULL
                           B03_x = c(-1, -1, -1, -1, -1, 1, 1, 1, 1, 0, 0.5), 
                           B03_y = c(0, 1, 1.5, 2.5, 3, 1, 1.5, 2.5, 3, 4, 4), 
                           B22_x = c(NA, -1, 0, -0.5, 0.5, 1.5, 1, 1.5, NA, 0.5, 0), 
-                          B22_y = c(NA, 1, 1, 0, 0, 0.5, 1, 1.5, NA, 1.5, 1.5))
+                          B22_y = c(NA, 1, 1, 0, 0, 0.5, 1, 1.5, NA, 1.5, 1.5),
+                          B50_x = c(1, 1, 1, 1, -1, -1, -1, NA, NA, -1, -1.5),
+                          B50_y = c(2.5, 1.5, 1, 0, 0, 1, 1.5, NA, NA, 2.5, 2.5))
   if(!is.null(layout)){
     if(layout == 'B03' & !('group' %in% edge_attr_names(g))){
       l = unname(as.matrix(layout.df[V(g)$name, c('B03_x', 'B03_y')]))
     } else if(layout == 'B22' & !('group' %in% edge_attr_names(g))){
       l = unname(as.matrix(layout.df[V(g)$name, c('B22_x', 'B22_y')]))
+    } else if(layout == 'B50' & !('group' %in% edge_attr_names(g))){
+      l = unname(as.matrix(layout.df[V(g)$name, c('B50_x', 'B50_y')]))
     } else { # if no layout or invalid layout given, go to gem
       l = layout_with_gem(g)
     }
