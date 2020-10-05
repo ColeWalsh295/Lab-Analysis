@@ -317,16 +317,20 @@ g <- boris.to.adjacency(file1 = 'C:/Users/Cole/Box Sync/Network analysis/Exporte
 ## Read adjacency matrices and calculate reliability
 ```{r, warning = FALSE, message = FALSE}
 g.scan.group.MS <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1116_Fall2017/Scan_Pendulum1_401_MS_adj.csv', 
-                                    method = 'scan-group', name = 'MS scan-group')
+                                    method = 'scan-group', 
+                                    name = 'MS scan-group', directed = TRUE)
 
 g.scan.group.CW <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1116_Fall2017/Scan_Pendulum1_401_CW_adj.csv', 
-                                    method = 'scan-group', name = 'CW scan-group')
+                                    method = 'scan-group', 
+                                    name = 'CW scan-group', directed = TRUE)
 
 g.scan.group.DW <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1116_Fall2017/Scan_Pendulum1_401_DW_adj.csv', 
-                                    method = 'scan-group', name = 'DW scan-group')
+                                    method = 'scan-group', 
+                                    name = 'DW scan-group', directed = TRUE)
 
 g.scan.group.AH <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1116_Fall2017/Scan_PendulumI_401_AH_adj.csv', 
-                                    method = 'scan-group', name = 'AH scan-group')
+                                    method = 'scan-group', 
+                                    name = 'AH scan-group', directed = TRUE)
 
 reliability(g.scan.group.MS, g.scan.group.CW, type = 'directed', 
             normalize = FALSE)
@@ -342,5 +346,14 @@ reliability(g.scan.group.MS, g.scan.group.AH, type = 'directed',
             normalize = FALSE)
 reliability(g.scan.group.MS, g.scan.group.AH, type = 'directed', 
             normalize = TRUE)
+```
+
+# B50 layout test
+```{r}
+g.scan.group.DW <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1116_Fall2017/Scan_ForceLaws_402_DW_adj.csv', 
+                                    method = 'scan-group', 
+                                    name = 'DW scan-group', directed = TRUE)
+plot.graph(g.scan.group.DW, vertex.scale = 20, edge.scale = 5, layout = 'B50',
+           standardNodes = c('TA', 'EveryoneTable'))
 ```
 
