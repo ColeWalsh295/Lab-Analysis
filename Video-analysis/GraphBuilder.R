@@ -311,15 +311,17 @@ graph.from.adjacency <- function(file, method, directed = FALSE, name = '',
   return(g)
 }
 
-plot.graph <- function(g, vertex.scale = 1, edge.scale = 1, standardNodes = NULL,
-                       layout = NULL, vertex.label = TRUE){
+plot.graph <- function(g, vertex.scale = NULL, edge.scale = NULL, 
+                       standardNodes = NULL, layout = NULL, vertex.label = TRUE){
 #' Plot a graph
 #' 
 #' Plots a SNA graph with specified attributes
 #' 
 #' @param g graph object
-#' @param vertex.scale constant to be multiplied by all vertex sizes
-#' @param edge.scale constant to be multiplied by all edge sizes
+#' @param vertex.scale constant all vertex sizes are divided by; if null (default),
+#' set to max centrality of non-standard node divided by 20
+#' @param edge.scale constant all edge sizes are divided by; if null (default), 
+#' set to max edge weight divided by 5
 #' @param standardNodes vector of nodes to be excluded from scaling (e.g., 'TA' or 
 #' 'EveryoneTable')
 #' @param layout how to arrange nodes in network; currently accepts 'B03', 'B22', 
@@ -330,7 +332,8 @@ plot.graph <- function(g, vertex.scale = 1, edge.scale = 1, standardNodes = NULL
 #' returns a plot object
   
   E(g)$color <- adjustcolor('black', 0.5)
-  E(g)$size <- E(g)$weight/max(E(g)$weight) * edge.scale
+  edge.scale <- ifelse(is.null(edge.scale), max(E(g)$weight)/5, edge.scale)
+  E(g)$size <- E(g)$weight/edge.scale
   if('group' %in% edge_attr_names(g)){
     E(g)$line.type <- 2 * (E(g)$group == 'within') + 1
   } else {
@@ -338,15 +341,19 @@ plot.graph <- function(g, vertex.scale = 1, edge.scale = 1, standardNodes = NULL
   }
   
   if(!is.null(standardNodes)){
+    # set standardized nodes to maximum of other nodes and scale by this max
+    # i.e., standarized nodes will have size one with variable scaling
+    max.nonstandard <- max(V(g)$centrality.total[!(V(g)$name %in% 
+                                                     standardNodes)])
+    vertex.scale <- ifelse(is.null(vertex.scale), max.nonstandard/20, vertex.scale)
     # add 1 to centralities to deal with zeros
-    V(g)$size <- ifelse(V(g)$name %in% standardNodes, 1,
-                        (V(g)$centrality.total + 1)/max(V(g)$centrality.total[!(V(g)$name 
-                                                                                %in% 
-                                                                                  standardNodes)]))
+    V(g)$size <- ifelse(V(g)$name %in% standardNodes, max.nonstandard, 
+                        (V(g)$centrality.total + 1))/vertex.scale
   } else {
-    V(g)$size <- (V(g)$centrality.total + 1)/max(V(g)$centrality.total)
+    vertex.scale <- ifelse(is.null(vertex.scale), max(V(g)$centrality.total)/20, 
+                           vertex.scale)
+    V(g)$size <- (V(g)$centrality.total + 1)/vertex.scale
   }
-  V(g)$size <- V(g)$size * vertex.scale
   
   layout.df <- data.frame(row.names = c('Table0', 'Table1', 'Table2', 'Table3', 
                                         'Table4', 'Table5', 'Table6', 'Table7', 
@@ -378,8 +385,10 @@ plot.graph <- function(g, vertex.scale = 1, edge.scale = 1, standardNodes = NULL
     g$palette <- categorical_pal(max(V(g)$group))
     V(g)$color <- V(g)$group
   } else {
-    g$palette <- categorical_pal(2)
-    V(g)$color <- ifelse(V(g)$name %in% c('TA', 'EveryoneTable'), 1, 2)
+    g$palette <- categorical_pal(3)
+    V(g)$color <- case_when(V(g)$name == 'TA' ~ 1,
+                            V(g)$name == 'EveryoneTable' ~ 2,
+                            TRUE ~ 3)
   }
 
   # need vectors of vertex.label binaries to go with ifelse()

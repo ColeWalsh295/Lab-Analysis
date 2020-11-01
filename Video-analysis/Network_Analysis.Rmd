@@ -92,45 +92,45 @@ reliability <- function(g1, g2, type, normalize = FALSE){
 g.scan.9.11 <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1112_Fall2019/Scan_Method/Scan_9_11_CW.csv', 
                                     method = 'scan-student', name = '9-11 Scan')
 
-plot.graph(g.scan.9.11, vertex.scale = 20, edge.scale = 5, vertex.label = FALSE)
+plot.graph(g.scan.9.11, vertex.label = FALSE)
 
 g.scan.9.18 <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1112_Fall2019/Scan_Method/Scan_9_18_CW.csv', 
                                     method = 'scan-student', name = '9-18 Scan')
-plot.graph(g.scan.9.18, vertex.scale = 20, edge.scale = 5, vertex.label = FALSE)
+plot.graph(g.scan.9.18, vertex.label = FALSE)
 
 g.scan.9.25 <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1112_Fall2019/Scan_Method/Scan_9_25_CW.csv', 
                                     method = 'scan-student', name = '9-25 Scan')
-plot.graph(g.scan.9.25, vertex.scale = 20, edge.scale = 5, vertex.label = FALSE)
+plot.graph(g.scan.9.25, vertex.label = FALSE)
 
 g.scan.10.9 <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1112_Fall2019/Scan_Method/Scan_10_9_MS.csv', 
                                     method = 'scan-student', name = '10-8 Scan')
-plot.graph(g.scan.10.9, vertex.scale = 20, edge.scale = 5, vertex.label = FALSE)
+plot.graph(g.scan.10.9, vertex.label = FALSE)
 ```
 
 ## Monday section
 ```{r}
 g.scan.9.16 <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1112_Fall2019/Scan_Method/Scan_9_16_DK.csv', 
                                     method = 'scan-student', name = '9-16 Scan')
-plot.graph(g.scan.9.16, vertex.scale = 20, edge.scale = 5, vertex.label = FALSE)
+plot.graph(g.scan.9.16, vertex.label = FALSE)
 
 g.scan.9.30 <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1112_Fall2019/Scan_Method/Scan_9_30_DK.csv', 
                                     method = 'scan-student', name = '9-30 Scan')
-plot.graph(g.scan.9.30, vertex.scale = 20, edge.scale = 5, vertex.label = FALSE)
+plot.graph(g.scan.9.30, vertex.label = FALSE)
 
 g.scan.10.7 <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1112_Fall2019/Scan_Method/Scan_10_7_DK.csv', 
                                     method = 'scan-student', name = '10-7 Scan')
-plot.graph(g.scan.10.7, vertex.scale = 20, edge.scale = 5, vertex.label = FALSE)
+plot.graph(g.scan.10.7, vertex.label = FALSE)
 
 g.scan.10.21 <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1112_Fall2019/Scan_Method/Scan_10_21_DK.csv', 
                                     method = 'scan-student', name = '10-21 Scan')
-plot.graph(g.scan.10.21, vertex.scale = 20, edge.scale = 5, vertex.label = FALSE)
+plot.graph(g.scan.10.21, vertex.label = FALSE)
 
 g.scan.10.28 <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1112_Fall2019/Scan_Method/Scan_10_28_DK.csv', 
                                     method = 'scan-student', name = '10-28 Scan')
 # extra everyone node coded, so we'll remove that
 g.scan.10.28 <- subgraph(g.scan.10.28, 1:(length(V(g.scan.10.28)) - 1))
 
-plot.graph(g.scan.10.28, vertex.scale = 20, edge.scale = 5, vertex.label = FALSE)
+plot.graph(g.scan.10.28, vertex.label = FALSE)
 ```
 
 # Load skip method graphs
@@ -138,7 +138,7 @@ plot.graph(g.scan.10.28, vertex.scale = 20, edge.scale = 5, vertex.label = FALSE
 ```{r}
 g.skip.9.11 <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1112_Fall2019/Skip_Method/Skip_9_11_DK.csv', 
                                     method = 'skip', name = '9-11 Skip')
-plot.graph(g.skip.9.11, vertex.scale = 20, edge.scale = 5, vertex.label = FALSE)
+plot.graph(g.skip.9.11, vertex.label = FALSE)
 
 g.skip.9.18 <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1112_Fall2019/Skip_Method/Skip_9_18_DK.csv', 
                                     method = 'skip', name = '9-18 Skip')
@@ -148,15 +148,15 @@ V(g.skip.9.18)$name <- c('1A', '1B', '2C', '2B', '2A', '3A', '3C', '3B', '4A',
                          '4B', '4C', '5A', '5B', '5C', '6A', '6B', '6C', '7A', 
                          '7B')
 
-plot.graph(g.skip.9.18, vertex.scale = 20, edge.scale = 5, vertex.label = FALSE)
+plot.graph(g.skip.9.18, vertex.label = FALSE)
 
 g.skip.9.25 <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1112_Fall2019/Skip_Method/Skip_9_25_CW.csv', 
                                     method = 'skip', name = '9-25 Skip')
-plot.graph(g.skip.9.25, vertex.scale = 20, edge.scale = 5, vertex.label = FALSE)
+plot.graph(g.skip.9.25, vertex.label = FALSE)
 
 g.skip.10.9 <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1112_Fall2019/Skip_Method/Skip_10_9_DK.csv', 
                                     method = 'skip', name = '10-9 Skip')
-plot.graph(g.skip.10.9, vertex.scale = 20, edge.scale = 5, vertex.label = FALSE)
+plot.graph(g.skip.10.9, vertex.label = FALSE)
 ```
 
 # Check interrater reliability for 9-18
@@ -212,7 +212,7 @@ g.TA.9.18.Dur.DK <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysi
 
 g.TA.9.18.Dur.DW <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1112_Fall2019/TA_Method/Un_normalized/TA_9_18_Dur_DW.csv', 
                                          method = 'scan-group', directed = TRUE)
-plot.graph(g.TA.9.18.Dur.DW, vertex.scale = 20, edge.scale = 5, layout = 'B22',
+plot.graph(g.TA.9.18.Dur.DW, layout = 'B22',
            standardNodes = c('TA', 'EveryoneTable'))
 
 reliability(g.TA.9.18.Dur.DK, g.TA.9.18.Dur.DW, type = 'directed')
@@ -224,7 +224,7 @@ g.TA.9.18.No.DK <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis
 
 g.TA.9.18.No.DW <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1112_Fall2019/TA_Method/Un_normalized/TA_9_18_No_DW.csv', 
                                          method = 'scan-group', directed = TRUE)
-plot.graph(g.TA.9.18.No.DW, vertex.scale = 20, edge.scale = 5, layout = 'B22',
+plot.graph(g.TA.9.18.No.DW, layout = 'B22',
            standardNodes = c('TA', 'EveryoneTable'))
 
 reliability(g.TA.9.18.No.DK, g.TA.9.18.No.DW, type = 'directed')
@@ -350,10 +350,10 @@ reliability(g.scan.group.MS, g.scan.group.AH, type = 'directed',
 
 # B50 layout test
 ```{r}
-g.scan.group.DW <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1116_Fall2017/Scan_ForceLaws_402_DW_adj.csv', 
+g.scan.group.DW <- graph.from.adjacency('C:/Users/Cole/Box Sync/Network analysis/Adjacency_Matrices/P1116_Fall2017/sECTION_402/Scan_ForceLaws_402_DW_adj.csv', 
                                     method = 'scan-group', 
                                     name = 'DW scan-group', directed = TRUE)
-plot.graph(g.scan.group.DW, vertex.scale = 20, edge.scale = 5, layout = 'B50',
-           standardNodes = c('TA', 'EveryoneTable'))
+plot.graph(g.scan.group.DW, layout = 'B50', vertex.scale = 0.2, edge.scale = 40,
+           standardNodes = c('TA', 'EveryoneTable'), vertex.label = FALSE)
 ```
 
